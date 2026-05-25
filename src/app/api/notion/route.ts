@@ -99,7 +99,7 @@ async function updatePDI(body: any) {
   return { ok: true };
 }
 
-export async function POST(req: NextRequest) {
+const { userId } = await auth();
   const { userId } = await auth();
   const body = await req.json();
   const { action } = body;
