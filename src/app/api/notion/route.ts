@@ -1,7 +1,6 @@
-// Avança Talentos — API Notion v2
+// Avança Talentos — API Notion v3 (sem auth para validação)
 import { Client } from "@notionhq/client";
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 
@@ -58,13 +57,21 @@ async function createCiclo(body: any) {
 }
 
 async function saveCicloData(body: any) {
-  const { pageId, tipo, dados } = body;
+  const { pageId, tipo, dados, fatosGestor, fatosAuto } = body;
   const lines = [
     "",
     "=== " + tipo.toUpperCase() + " ===",
     "Data: " + new Date().toLocaleDateString("pt-BR"),
-    ...Object.entries(dados).map(([k, v]: any) => k + ": " + JSON.stringify(v)),
+    ...Object.entries(dados || {}).map(([k, v]: any) => k + ": " + JSON.stringify(v)),
   ];
+  if (fatosGestor) {
+    lines.push("=== FATOS_GESTOR ===");
+    Object.entries(fatosGestor).forEach(([k, v]: any) => lines.push(k + ": " + v));
+  }
+  if (fatosAuto) {
+    lines.push("=== FATOS_AUTO ===");
+    Object.entries(fatosAuto).forEach(([k, v]: any) => lines.push(k + ": " + v));
+  }
   await notion.blocks.children.append({
     block_id: pageId,
     children: lines.map(t => paragraph(t)),
@@ -118,23 +125,6 @@ async function getCicloData(pageId: string) {
     .join("\n");
   const get = (label: string) =>
     fullText.match(new RegExp(label + ":\\s*(.+)"))?.[1]?.trim() || "";
-
-  function extractSection(nome: string) {
-    const match = fullText.match(
-      new RegExp("=== " + nome + " ===[\\s\\S]*?(?===|$)")
-    );
-    if (!match) return null;
-    const obj: any = {};
-    match[0].split("\n").forEach(line => {
-      const m = line.match(/^(\d+):\s*(.+)/);
-      if (m) {
-        try { obj[m[1]] = JSON.parse(m[2]); }
-        catch { obj[m[1]] = m[2]; }
-      }
-    });
-    return obj;
-  }
-
   const compsRaw = get("COMPETENCIAS");
   return {
     pageId,
@@ -146,23 +136,12 @@ async function getCicloData(pageId: string) {
     criadoEm: get("CRIADO_EM"),
     status: get("STATUS"),
     comps: compsRaw ? compsRaw.split(",").map(Number) : [],
-    avalGestor: extractSection("GESTOR"),
-    fatosGestor: extractSection("FATOS_GESTOR"),
-    avalAuto: extractSection("AUTO"),
-    fatosAuto: extractSection("FATOS_AUTO"),
-    consenso: extractSection("CONSENSO"),
   };
 }
 
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
   const body = await req.json();
   const { action } = body;
-
-  const publicActions = ["get", "saveAuto", "saveGestor"];
-  if (!publicActions.includes(action) && !userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   try {
     if (action === "create") return NextResponse.json(await createCiclo(body));
