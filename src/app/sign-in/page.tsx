@@ -1,11 +1,10 @@
-// Avança Talentos v1
 import { SignIn } from "@clerk/nextjs";
 
 export default function SignInPage() {
   return (
     <div style={{
       minHeight: "100vh",
-      background: "linear-gradient(135deg, #7C3AED, #4F46E5)",
+      background: "linear-gradient(160deg, #0a1628 0%, #112240 60%, #1d3461 100%)",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
@@ -13,12 +12,28 @@ export default function SignInPage() {
       gap: 24,
       padding: 20,
     }}>
-      <div style={{ textAlign: "center", color: "#fff" }}>
-        <div style={{ fontSize: 48, marginBottom: 8 }}>📋</div>
-        <h1 style={{ fontWeight: 800, fontSize: 24, margin: "0 0 4px" }}>Plataforma PDI</h1>
-        <p style={{ opacity: 0.8, fontSize: 14, margin: 0 }}>FYI — Korn Ferry · 38 Competências</p>
+      <div style={{ textAlign: "center" }}>
+        <div style={{
+          display: "inline-block",
+          background: "rgba(132,204,22,0.15)",
+          border: "1px solid rgba(132,204,22,0.3)",
+          color: "#84cc16",
+          padding: "6px 20px",
+          borderRadius: 99,
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: "0.15em",
+          textTransform: "uppercase",
+          marginBottom: 20,
+        }}>Plataforma de Avaliação e Desenvolvimento</div>
+        <h1 style={{ color: "#ffffff", fontSize: 36, fontWeight: 800, margin: "0 0 8px" }}>
+          Avança <span style={{ color: "#84cc16" }}>Talentos</span>
+        </h1>
+        <p style={{ color: "#90e0ef", fontSize: 15, margin: 0 }}>
+          Sua ferramenta de avaliação e desenvolvimento de talentos
+        </p>
       </div>
-      <SignIn afterSignInUrl="/dashboard" />
+      <SignIn fallbackRedirectUrl="/dashboard" />
     </div>
   );
 }
