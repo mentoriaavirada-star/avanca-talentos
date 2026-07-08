@@ -1,5 +1,4 @@
 "use client";
-import { useUser, useClerk } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 
 const COMPETENCIAS = [
@@ -33,7 +32,7 @@ const ESCALA = [
   { v:5, label:"Muito acima do esperado", cor:"#15803d" },
 ];
 
-const NAVY="#0a1628", NAVY2="#112240", TEAL="#00b4d8", LIME="#84cc16", WHITE="#ffffff", GRAY="#64748b", GRAY_L="#f1f5f9", GRAY_B="#e2e8f0";
+const NAVY="#0a1628", TEAL="#00b4d8", LIME="#84cc16", LIME_D="#65a30d", WHITE="#ffffff", GRAY="#64748b", GRAY_L="#f1f5f9", GRAY_B="#e2e8f0";
 
 async function apiCall(action: string, extra: object = {}) {
   const res = await fetch("/api/notion", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({action,...extra}) });
@@ -88,11 +87,8 @@ function ScaleBtn({ value, onChange }: { value:number|null; onChange:(v:number)=
 }
 
 export default function Dashboard() {
-  const { user } = useUser();
-  const { signOut } = useClerk();
   const [screen, setScreen] = useState<"dash"|"criar"|"ciclo"|"gestor"|"auto"|"analise">("dash");
   const [ciclos, setCiclos] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<any>(null);
   const [cicloAtual, setCicloAtual] = useState<any>(null);
@@ -108,11 +104,6 @@ export default function Dashboard() {
   const [metodo, setMetodo] = useState<"media"|"consenso">("media");
 
   function showToast(msg:string, type="ok") { setToast({msg,type}); setTimeout(()=>setToast(null),3000); }
-
-  useEffect(()=>{
-    setCiclos([]);
-    setLoading(false);
-  },[]);
 
   const compsDociclo = COMPETENCIAS.filter(c=>cicloAtual?.comps?.includes(c.id));
 
@@ -146,7 +137,7 @@ export default function Dashboard() {
   async function salvarGestor() {
     setSaving(true);
     try {
-      await apiCall("saveGestor",{pageId:cicloAtual.pageId,dados:{...Object.fromEntries(Object.entries(avalG).map(([k,v])=>[k,v]))},fatosGestor:fatosG});
+      await apiCall("saveGestor",{pageId:cicloAtual.pageId,dados:avalG,fatosGestor:fatosG});
       showToast("Avaliação do gestor salva!");
       setScreen("ciclo");
     } catch { showToast("Erro ao salvar","err"); }
@@ -156,7 +147,7 @@ export default function Dashboard() {
   async function salvarAuto() {
     setSaving(true);
     try {
-      await apiCall("saveAuto",{pageId:cicloAtual.pageId,dados:{...Object.fromEntries(Object.entries(avalA).map(([k,v])=>[k,v]))},fatosAuto:fatosA});
+      await apiCall("saveAuto",{pageId:cicloAtual.pageId,dados:avalA,fatosAuto:fatosA});
       showToast("Autoavaliação salva!");
       setScreen("ciclo");
     } catch { showToast("Erro ao salvar","err"); }
@@ -169,8 +160,7 @@ export default function Dashboard() {
     win!.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Avança Talentos — ${cicloAtual?.colaborador}</title>
     <style>body{font-family:system-ui,sans-serif;padding:40px;color:#0a1628;max-width:780px;margin:0 auto}h2{color:#0a1628;border-bottom:2px solid #84cc16;padding-bottom:6px;margin-top:32px}table{width:100%;border-collapse:collapse;font-size:13px;margin:16px 0}th{background:#0a1628;color:#fff;padding:10px}td{padding:10px;border-bottom:1px solid #e2e8f0;font-size:12px}.ass{display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;margin-top:60px}.ass-item{border-top:2px solid #0a1628;padding-top:10px;font-size:13px}@media print{body{padding:20px}}</style></head><body>
     <div style="background:linear-gradient(135deg,#0a1628,#112240);color:#fff;padding:32px;border-radius:12px;margin-bottom:32px">
-      <div style="display:inline-block;background:rgba(132,204,22,.2);border:1px solid rgba(132,204,22,.4);color:#84cc16;padding:4px 14px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px">Avaliação e Desenvolvimento de Talentos</div>
-      <h1 style="color:#fff;margin:0 0 4px;font-size:28px">Avança <span style="color:#84cc16">Talentos</span></h1>
+      <h1 style="color:#84cc16;margin:0 0 4px;font-size:28px">Avança Talentos</h1>
       <p style="color:#90e0ef;margin:0 0 24px;font-size:14px">Sua ferramenta de avaliação e desenvolvimento de talentos</p>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;font-size:13px">
         <div><p style="color:#90e0ef;margin:0;font-size:11px">COLABORADOR</p><p style="color:#fff;font-weight:700;margin:4px 0 0">${cicloAtual?.colaborador}</p></div>
@@ -183,34 +173,30 @@ export default function Dashboard() {
     </div>
     <h2>Resultado da Avaliação</h2>
     <table><tr><th>Competência</th><th>Gestor</th><th>Autoavaliação</th><th>Resultado Final</th><th>Fatos Gestor</th><th>Fatos Colaborador</th></tr>
-    ${compsDociclo.map(c=>`<tr><td><strong>${c.nome}</strong></td><td style="text-align:center">${avalG[c.id]||"—"}</td><td style="text-align:center">${avalA[c.id]||"—"}</td><td style="text-align:center;font-weight:700;color:#0a1628">${getMediaOuConsenso(c.id)||"—"}</td><td>${fatosG[c.id]||"—"}</td><td>${fatosA[c.id]||"—"}</td></tr>`).join("")}
+    ${compsDociclo.map(c=>`<tr><td><strong>${c.nome}</strong></td><td style="text-align:center">${avalG[c.id]||"—"}</td><td style="text-align:center">${avalA[c.id]||"—"}</td><td style="text-align:center;font-weight:700">${getMediaOuConsenso(c.id)||"—"}</td><td>${fatosG[c.id]||"—"}</td><td>${fatosA[c.id]||"—"}</td></tr>`).join("")}
     </table>
-    ${piores.length>0?`<h2>Plano de Desenvolvimento — 3 Prioridades</h2><p style="font-size:13px;color:#64748b">Competências com menor resultado — desenvolvimento prioritário</p>${piores.map((c:any,i:number)=>`
+    ${piores.length>0?`<h2>Plano de Desenvolvimento — 3 Prioridades</h2>${piores.map((c:any,i:number)=>`
     <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:10px;border-left:4px solid #84cc16">
-      <h3 style="margin:0 0 4px;color:#0a1628;font-size:16px">${i+1}. ${c.nome} — Nota: ${c.nota}</h3>
-      <p style="font-size:12px;color:#64748b;margin:0 0 12px">${c.desc}</p>
-      ${impacto[c.id]?`<p style="font-size:13px;margin:0 0 6px"><strong>Impacto atual:</strong> ${impacto[c.id]}</p>`:""}
-      ${expect[c.id]?`<p style="font-size:13px;margin:0 0 12px"><strong>Expectativa de resultado:</strong> ${expect[c.id]}</p>`:""}
-      <p style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px">5 Ações de Desenvolvimento</p>
+      <h3 style="margin:0 0 4px;color:#0a1628">${i+1}. ${c.nome} — Nota: ${c.nota}</h3>
+      ${impacto[c.id]?`<p style="font-size:13px"><strong>Impacto atual:</strong> ${impacto[c.id]}</p>`:""}
+      ${expect[c.id]?`<p style="font-size:13px"><strong>Expectativa:</strong> ${expect[c.id]}</p>`:""}
+      <p style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin:12px 0 6px">5 Ações</p>
       ${c.acoes.map((a:string)=>`<p style="font-size:13px;margin:3px 0">• ${a}</p>`).join("")}
-      <p style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">2 Técnicas</p>
+      <p style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin:12px 0 6px">2 Técnicas</p>
       ${c.tecnicas.map((t:string)=>`<p style="font-size:13px;margin:3px 0">• ${t}</p>`).join("")}
-      <p style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">2 Leituras</p>
+      <p style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin:12px 0 6px">2 Leituras</p>
       ${c.leituras.map((l:string)=>`<p style="font-size:13px;margin:3px 0">📖 ${l}</p>`).join("")}
     </div>`).join("")}`:""}
     <h2>Compromisso de Desenvolvimento</h2>
-    <p style="font-size:13px;color:#64748b;margin-bottom:40px">Ao assinar abaixo, as partes se comprometem com o processo de desenvolvimento descrito neste documento.</p>
     <div class="ass">
       <div class="ass-item"><div style="height:50px"></div><strong>${cicloAtual?.colaborador}</strong><br><span style="color:#64748b;font-size:12px">Colaborador(a)</span><br><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
       <div class="ass-item"><div style="height:50px"></div><strong>${cicloAtual?.gestor}</strong><br><span style="color:#64748b;font-size:12px">Gestor(a)</span><br><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
       <div class="ass-item"><div style="height:50px"></div><strong>${cicloAtual?.rh}</strong><br><span style="color:#64748b;font-size:12px">RH / Consultor(a)</span><br><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
     </div>
-    <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:48px">Gerado por Avança Talentos · Sua ferramenta de avaliação e desenvolvimento de talentos</p>
     <script>window.print();<\/script></body></html>`);
     win!.document.close();
   }
 
-  // HEADER
   const Header = ({title,sub,back}:{title:string;sub?:string;back?:()=>void}) => (
     <div style={{background:NAVY,padding:"16px 24px",display:"flex",alignItems:"center",gap:12}}>
       {back&&<button onClick={back} style={{background:"none",border:"none",color:"#90e0ef",cursor:"pointer",fontSize:22,lineHeight:1}}>←</button>}
@@ -219,18 +205,13 @@ export default function Dashboard() {
         <p style={{color:WHITE,fontWeight:700,fontSize:16,margin:0}}>{title}</p>
         {sub&&<p style={{color:"#90e0ef",fontSize:12,margin:"2px 0 0"}}>{sub}</p>}
       </div>
-      {user&&<div style={{display:"flex",alignItems:"center",gap:10}}>
-        <Avatar name={user.fullName||"RH"} size={34}/>
-        <button onClick={()=>signOut()} style={{background:"rgba(255,255,255,.1)",border:"none",color:"#90e0ef",borderRadius:8,padding:"6px 12px",fontSize:12,cursor:"pointer"}}>Sair</button>
-      </div>}
     </div>
   );
 
-  // DASHBOARD
   if(screen==="dash") return (
     <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
       {toast&&<Toast {...toast}/>}
-      <Header title={`Bem-vindo, ${user?.fullName?.split(" ")[0]||"RH"}`}/>
+      <Header title="Painel de Avaliação"/>
       <div style={{maxWidth:800,margin:"0 auto",padding:"32px 24px"}}>
         <div style={{background:NAVY,borderRadius:16,padding:28,marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
@@ -239,17 +220,20 @@ export default function Dashboard() {
           </div>
           <Btn onClick={()=>{setForm({colaborador:"",gestor:"",rh:"",cargo:"",area:""});setCompsSel([]);setScreen("criar");}}>+ Novo ciclo</Btn>
         </div>
-        {loading?(<div style={{textAlign:"center",padding:48}}><Spinner/><p style={{color:GRAY,marginTop:12}}>Carregando ciclos...</p></div>)
-        :ciclos.length===0?(<div style={{textAlign:"center",padding:48,color:GRAY}}><p style={{fontSize:15}}>Nenhum ciclo criado ainda.</p><p style={{fontSize:13}}>Clique em "+ Novo ciclo" para começar.</p></div>)
-        :ciclos.map((c:any)=>(
-          <div key={c.pageId} onClick={()=>{setCicloAtual(c);setScreen("ciclo");}} style={{background:WHITE,borderRadius:14,padding:18,marginBottom:12,border:`1px solid ${GRAY_B}`,cursor:"pointer"}}>
+        {ciclos.length===0?(
+          <div style={{textAlign:"center",padding:48,color:GRAY}}>
+            <p style={{fontSize:15,fontWeight:600}}>Nenhum ciclo criado ainda.</p>
+            <p style={{fontSize:13}}>Clique em "+ Novo ciclo" para começar.</p>
+          </div>
+        ):ciclos.map((c:any)=>(
+          <div key={c.pageId||c.id} onClick={()=>{setCicloAtual(c);setScreen("ciclo");}} style={{background:WHITE,borderRadius:14,padding:18,marginBottom:12,border:`1px solid ${GRAY_B}`,cursor:"pointer"}}>
             <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
               <Avatar name={c.colaborador} size={42}/>
               <div style={{flex:1}}>
                 <p style={{fontWeight:700,fontSize:15,margin:0,color:NAVY}}>{c.colaborador}</p>
                 <p style={{fontSize:12,color:GRAY,margin:"2px 0 0"}}>{c.cargo}{c.area&&` · ${c.area}`} · Gestor: {c.gestor}</p>
               </div>
-              <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:c.temConsenso?"#d1fae5":c.temGestor&&c.temAuto?"#fef9c3":"#f1f5f9",color:c.temConsenso?"#065f46":c.temGestor&&c.temAuto?"#713f12":GRAY,fontWeight:600}}>{c.temConsenso?"Concluído":c.temGestor&&c.temAuto?"Aguardando feedback":c.temGestor||c.temAuto?"Em andamento":"Aguardando"}</span>
+              <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:"#f1f5f9",color:GRAY,fontWeight:600}}>Em andamento</span>
             </div>
             <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
               {(c.comps||[]).slice(0,5).map((id:number)=>{const comp=COMPETENCIAS.find(x=>x.id===id);return comp?<span key={id} style={{fontSize:11,background:NAVY+"11",color:NAVY,padding:"3px 8px",borderRadius:99,fontWeight:500}}>{comp.nome}</span>:null;})}
@@ -261,7 +245,6 @@ export default function Dashboard() {
     </div>
   );
 
-  // CRIAR CICLO
   if(screen==="criar") return (
     <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
       {toast&&<Toast {...toast}/>}
@@ -307,30 +290,29 @@ export default function Dashboard() {
     </div>
   );
 
-  // CICLO
   if(screen==="ciclo"&&cicloAtual) return (
     <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
       {toast&&<Toast {...toast}/>}
-      <Header title={cicloAtual.colaborador} sub={`Ciclo de avaliação · ${cicloAtual.criadoEm}`} back={()=>setScreen("dash")}/>
+      <Header title={cicloAtual.colaborador} sub={`Ciclo · ${cicloAtual.criadoEm}`} back={()=>setScreen("dash")}/>
       <div style={{maxWidth:720,margin:"0 auto",padding:"32px 24px"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
           <div style={{background:WHITE,borderRadius:14,padding:20,border:`1px solid ${GRAY_B}`}}>
             <div style={{width:3,height:20,background:NAVY,borderRadius:2,marginBottom:10}}></div>
-            <h4 style={{fontSize:14,fontWeight:700,color:NAVY,marginBottom:4}}>Link do Gestor</h4>
-            <p style={{fontSize:12,color:GRAY,marginBottom:14}}>Avaliação confidencial do colaborador</p>
-            <Btn size="sm" onClick={()=>{setAvalG({});setFatosG({});setScreen("gestor");}}>Abrir avaliação do gestor</Btn>
+            <h4 style={{fontSize:14,fontWeight:700,color:NAVY,marginBottom:4}}>Avaliação do Gestor</h4>
+            <p style={{fontSize:12,color:GRAY,marginBottom:14}}>Confidencial até o feedback</p>
+            <Btn size="sm" onClick={()=>{setAvalG({});setFatosG({});setScreen("gestor");}}>Abrir avaliação</Btn>
           </div>
           <div style={{background:WHITE,borderRadius:14,padding:20,border:`1px solid ${GRAY_B}`}}>
             <div style={{width:3,height:20,background:TEAL,borderRadius:2,marginBottom:10}}></div>
-            <h4 style={{fontSize:14,fontWeight:700,color:NAVY,marginBottom:4}}>Link do Colaborador</h4>
-            <p style={{fontSize:12,color:GRAY,marginBottom:14}}>Autoavaliação confidencial</p>
+            <h4 style={{fontSize:14,fontWeight:700,color:NAVY,marginBottom:4}}>Autoavaliação</h4>
+            <p style={{fontSize:12,color:GRAY,marginBottom:14}}>Link do colaborador</p>
             <Btn size="sm" color={TEAL} onClick={()=>{setAvalA({});setFatosA({});setScreen("auto");}}>Abrir autoavaliação</Btn>
           </div>
         </div>
         <div style={{background:WHITE,borderRadius:14,padding:20,border:`1px solid ${GRAY_B}`,marginBottom:14}}>
           <h4 style={{fontSize:14,fontWeight:700,color:NAVY,marginBottom:4}}>Análise Cruzada</h4>
-          <p style={{fontSize:12,color:GRAY,marginBottom:14}}>Comparativo entre gestor e colaborador. Pode ser compartilhado antes do consenso.</p>
-          <Btn size="sm" color={LIME} onClick={()=>setScreen("analise")}>Ver análise cruzada</Btn>
+          <p style={{fontSize:12,color:GRAY,marginBottom:14}}>Comparativo entre gestor e colaborador</p>
+          <Btn size="sm" onClick={()=>setScreen("analise")}>Ver análise cruzada</Btn>
         </div>
         <div style={{background:WHITE,borderRadius:14,padding:20,border:`1px solid ${GRAY_B}`}}>
           <h4 style={{fontSize:14,fontWeight:700,color:NAVY,marginBottom:12}}>Competências do ciclo ({compsDociclo.length})</h4>
@@ -340,17 +322,16 @@ export default function Dashboard() {
     </div>
   );
 
-  // AVALIAÇÃO GESTOR
   if(screen==="gestor"&&cicloAtual) return (
     <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
       {toast&&<Toast {...toast}/>}
-      <Header title="Avaliação do Colaborador" sub={`${cicloAtual.colaborador} · Confidencial até o feedback`} back={()=>setScreen("ciclo")}/>
+      <Header title="Avaliação do Colaborador" sub={`${cicloAtual.colaborador} · Confidencial`} back={()=>setScreen("ciclo")}/>
       <div style={{maxWidth:720,margin:"0 auto",padding:"32px 24px"}}>
         <div style={{background:"#fef9c3",borderRadius:12,padding:"14px 18px",marginBottom:20,border:"1px solid #ca8a04"}}>
-          <p style={{fontSize:13,color:"#713f12",margin:0}}>Esta avaliação é <strong>sigilosa</strong>. O colaborador não terá acesso até o momento do feedback. Baseie-se em fatos e comportamentos observáveis.</p>
+          <p style={{fontSize:13,color:"#713f12",margin:0}}>Avaliação <strong>sigilosa</strong>. O colaborador não terá acesso até o feedback. Baseie-se em fatos observáveis.</p>
         </div>
         <div style={{background:WHITE,borderRadius:12,padding:"12px 16px",marginBottom:20,border:`1px solid ${GRAY_B}`}}>
-          <p style={{fontSize:11,fontWeight:600,color:GRAY,margin:0}}>Legenda: 1 = Muito abaixo do esperado · 2 = Abaixo · 3 = Dentro do esperado · 4 = Acima · 5 = Muito acima do esperado</p>
+          <p style={{fontSize:11,fontWeight:600,color:GRAY,margin:0}}>1 = Muito abaixo do esperado · 2 = Abaixo · 3 = Dentro do esperado · 4 = Acima · 5 = Muito acima</p>
         </div>
         {compsDociclo.map((c,i)=>(
           <div key={c.id} style={{background:WHITE,borderRadius:14,padding:20,marginBottom:14,border:`1px solid ${GRAY_B}`}}>
@@ -361,7 +342,7 @@ export default function Dashboard() {
             <ScaleBtn value={avalG[c.id]||null} onChange={v=>setAvalG(p=>({...p,[c.id]:v}))}/>
             <div style={{marginTop:14}}>
               <label style={{fontSize:12,fontWeight:600,color:GRAY,display:"block",marginBottom:6}}>Fatos e dados que embasam esta avaliação:</label>
-              <textarea value={fatosG[c.id]||""} onChange={e=>setFatosG(p=>({...p,[c.id]:e.target.value}))} placeholder="Descreva situações, comportamentos observados ou resultados concretos que justificam a nota..." rows={3} style={{width:"100%",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:13,padding:"10px",boxSizing:"border-box" as const,resize:"vertical" as const,fontFamily:"inherit"}}/>
+              <textarea value={fatosG[c.id]||""} onChange={e=>setFatosG(p=>({...p,[c.id]:e.target.value}))} placeholder="Descreva situações, comportamentos ou resultados concretos..." rows={3} style={{width:"100%",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:13,padding:"10px",boxSizing:"border-box" as const,resize:"vertical" as const,fontFamily:"inherit"}}/>
             </div>
           </div>
         ))}
@@ -370,17 +351,16 @@ export default function Dashboard() {
     </div>
   );
 
-  // AUTOAVALIAÇÃO
   if(screen==="auto"&&cicloAtual) return (
     <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
       {toast&&<Toast {...toast}/>}
-      <Header title="Autoavaliação" sub={`${cicloAtual.colaborador} · Confidencial até o feedback`} back={()=>setScreen("ciclo")}/>
+      <Header title="Autoavaliação" sub={`${cicloAtual.colaborador} · Confidencial`} back={()=>setScreen("ciclo")}/>
       <div style={{maxWidth:720,margin:"0 auto",padding:"32px 24px"}}>
         <div style={{background:"#dbeafe",borderRadius:12,padding:"14px 18px",marginBottom:20,border:"1px solid #3b82f6"}}>
-          <p style={{fontSize:13,color:"#1e40af",margin:0}}>Avalie cada competência com base no seu desempenho <strong>real e observável</strong>. Seja honesto — sua avaliação é sigilosa até o feedback.</p>
+          <p style={{fontSize:13,color:"#1e40af",margin:0}}>Avalie com base no seu desempenho <strong>real e observável</strong>. Sua avaliação é sigilosa até o feedback.</p>
         </div>
         <div style={{background:WHITE,borderRadius:12,padding:"12px 16px",marginBottom:20,border:`1px solid ${GRAY_B}`}}>
-          <p style={{fontSize:11,fontWeight:600,color:GRAY,margin:0}}>Legenda: 1 = Muito abaixo do esperado · 2 = Abaixo · 3 = Dentro do esperado · 4 = Acima · 5 = Muito acima do esperado</p>
+          <p style={{fontSize:11,fontWeight:600,color:GRAY,margin:0}}>1 = Muito abaixo do esperado · 2 = Abaixo · 3 = Dentro do esperado · 4 = Acima · 5 = Muito acima</p>
         </div>
         {compsDociclo.map((c,i)=>(
           <div key={c.id} style={{background:WHITE,borderRadius:14,padding:20,marginBottom:14,border:`1px solid ${GRAY_B}`}}>
@@ -391,7 +371,7 @@ export default function Dashboard() {
             <ScaleBtn value={avalA[c.id]||null} onChange={v=>setAvalA(p=>({...p,[c.id]:v}))}/>
             <div style={{marginTop:14}}>
               <label style={{fontSize:12,fontWeight:600,color:GRAY,display:"block",marginBottom:6}}>Fatos e dados que embasam sua avaliação:</label>
-              <textarea value={fatosA[c.id]||""} onChange={e=>setFatosA(p=>({...p,[c.id]:e.target.value}))} placeholder="Descreva situações, exemplos concretos ou resultados que justificam sua nota..." rows={3} style={{width:"100%",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:13,padding:"10px",boxSizing:"border-box" as const,resize:"vertical" as const,fontFamily:"inherit"}}/>
+              <textarea value={fatosA[c.id]||""} onChange={e=>setFatosA(p=>({...p,[c.id]:e.target.value}))} placeholder="Descreva situações, exemplos concretos ou resultados..." rows={3} style={{width:"100%",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:13,padding:"10px",boxSizing:"border-box" as const,resize:"vertical" as const,fontFamily:"inherit"}}/>
             </div>
           </div>
         ))}
@@ -400,7 +380,6 @@ export default function Dashboard() {
     </div>
   );
 
-  // ANÁLISE CRUZADA
   if(screen==="analise"&&cicloAtual) {
     const piores=get3Piores();
     return (
@@ -412,8 +391,6 @@ export default function Dashboard() {
             <Btn size="sm" color={metodo==="media"?LIME:GRAY_L} onClick={()=>setMetodo("media")}>Média automática</Btn>
             <Btn size="sm" color={metodo==="consenso"?LIME:GRAY_L} onClick={()=>setMetodo("consenso")}>Consenso manual</Btn>
           </div>
-
-          {/* Radar */}
           <div style={{background:WHITE,borderRadius:16,padding:24,marginBottom:20,border:`1px solid ${GRAY_B}`}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
               <h3 style={{color:NAVY,fontSize:15,fontWeight:700,margin:0}}>Gráfico comparativo</h3>
@@ -423,15 +400,8 @@ export default function Dashboard() {
                 {metodo==="consenso"&&<span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:16,height:2,background:LIME,display:"inline-block"}}></span>Consenso</span>}
               </div>
             </div>
-            <RadarChart
-              names={compsDociclo.map(c=>c.nome)}
-              gestor={compsDociclo.map(c=>avalG[c.id]||0)}
-              auto={compsDociclo.map(c=>avalA[c.id]||0)}
-              consenso={metodo==="consenso"?compsDociclo.map(c=>consenso[c.id]||0):null}
-            />
+            <RadarChart names={compsDociclo.map(c=>c.nome)} gestor={compsDociclo.map(c=>avalG[c.id]||0)} auto={compsDociclo.map(c=>avalA[c.id]||0)} consenso={metodo==="consenso"?compsDociclo.map(c=>consenso[c.id]||0):null}/>
           </div>
-
-          {/* Tabela */}
           <div style={{background:WHITE,borderRadius:16,padding:24,marginBottom:20,border:`1px solid ${GRAY_B}`}}>
             <h3 style={{color:NAVY,fontSize:15,fontWeight:700,marginBottom:16}}>Comparativo por competência</h3>
             {compsDociclo.map((c,i)=>{
@@ -453,16 +423,14 @@ export default function Dashboard() {
                   {metodo==="consenso"&&(
                     <div style={{marginTop:10,background:GRAY_L,borderRadius:10,padding:14}}>
                       <ScaleBtn value={consenso[c.id]||null} onChange={v=>setConsenso(p=>({...p,[c.id]:v}))}/>
-                      <input value={impacto[c.id]||""} onChange={e=>setImpacto(p=>({...p,[c.id]:e.target.value}))} placeholder="Impacto atual: como esta competência está afetando resultados hoje?" style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:12,marginTop:10,marginBottom:8,boxSizing:"border-box" as const,background:WHITE}}/>
-                      <input value={expect[c.id]||""} onChange={e=>setExpect(p=>({...p,[c.id]:e.target.value}))} placeholder="Expectativa: qual o resultado esperado ao desenvolver esta competência?" style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:12,boxSizing:"border-box" as const,background:WHITE}}/>
+                      <input value={impacto[c.id]||""} onChange={e=>setImpacto(p=>({...p,[c.id]:e.target.value}))} placeholder="Impacto atual desta competência nos resultados..." style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:12,marginTop:10,marginBottom:8,boxSizing:"border-box" as const,background:WHITE}}/>
+                      <input value={expect[c.id]||""} onChange={e=>setExpect(p=>({...p,[c.id]:e.target.value}))} placeholder="Expectativa de resultado com o desenvolvimento..." style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:12,boxSizing:"border-box" as const,background:WHITE}}/>
                     </div>
                   )}
                 </div>
               );
             })}
           </div>
-
-          {/* PDI automático */}
           {piores.length>0&&(
             <div style={{background:WHITE,borderRadius:16,padding:24,marginBottom:20,border:`2px solid ${LIME}`}}>
               <h3 style={{color:NAVY,fontSize:15,fontWeight:700,marginBottom:4}}>Plano de Desenvolvimento — 3 Prioridades</h3>
@@ -473,7 +441,7 @@ export default function Dashboard() {
                     <div style={{width:32,height:32,borderRadius:8,background:LIME,color:NAVY,fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
                     <div>
                       <p style={{fontWeight:800,fontSize:15,color:NAVY,margin:0}}>{c.nome}</p>
-                      <p style={{fontSize:12,color:GRAY,margin:"2px 0 0"}}>Nota: {c.nota} — {ESCALA[(c.nota||1)-1]?.label}</p>
+                      <p style={{fontSize:12,color:GRAY,margin:"2px 0 0"}}>Nota: {c.nota} — {ESCALA[(Math.round(c.nota)||1)-1]?.label}</p>
                     </div>
                   </div>
                   {metodo==="consenso"&&(
@@ -492,7 +460,6 @@ export default function Dashboard() {
               ))}
             </div>
           )}
-
           <div style={{display:"flex",gap:12}}>
             <Btn onClick={exportPDF}>Exportar PDF com assinaturas</Btn>
             <Btn outline color={NAVY} onClick={()=>setScreen("ciclo")}>Voltar ao ciclo</Btn>
