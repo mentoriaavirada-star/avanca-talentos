@@ -2,418 +2,507 @@
 import { useUser, useClerk } from "@clerk/nextjs";
 import { useState, useEffect } from "react";
 
-const FACTORS = [
-  { name:"Pensamento", key:"thought", color:"#7C3AED", light:"#EDE9FE", text:"#5B21B6",
-    clusters:[
-      { name:"Entendendo o negócio", comps:[
-        {id:1,name:"Visão de negócio",desc:"Aplica conhecimento do negócio e mercado para avançar os objetivos da organização",remedies:["Leia relatórios setoriais mensalmente","Participe de reuniões estratégicas","Converse com clientes internos e externos","Mapeie os principais indicadores financeiros"],readings:["Estratégia Competitiva – Michael Porter","O Lado Difícil das Situações Difíceis – Ben Horowitz"]},
-        {id:2,name:"Perspectiva financeira",desc:"Entende a linguagem e os fundamentos das finanças do negócio",remedies:["Estude os demonstrativos financeiros da empresa","Faça um curso de finanças para não-financeiros","Acompanhe o orçamento da sua área","Conecte decisões operacionais ao impacto financeiro"],readings:["Finanças para Executivos – Richard Brealey","O Jeito Certo de Fazer a Coisa Certa – Robert Kaplan"]},
-        {id:3,name:"Expertise técnica",desc:"Possui profundo conhecimento técnico e especializado na sua área",remedies:["Dedique tempo semanal para atualização técnica","Participe de comunidades profissionais","Mentore outras pessoas","Busque certificações relevantes"],readings:["Peak – Anders Ericsson","Ultralearning – Scott Young"]},
-      ]},
-      { name:"Tomando decisões complexas", comps:[
-        {id:4,name:"Qualidade da decisão",desc:"Toma boas decisões mesmo com informações incompletas",remedies:["Use frameworks de decisão como a Matriz de Eisenhower","Documente suas decisões e revise após 30 dias","Busque perspectivas diversas antes de decidir","Estabeleça critérios claros de sucesso"],readings:["Pensando Devagar e Depressa – Daniel Kahneman","Decisive – Chip Heath & Dan Heath"]},
-        {id:5,name:"Gestão da complexidade",desc:"Lida efetivamente com problemas de alta complexidade",remedies:["Decomponha problemas complexos em partes menores","Crie mapas mentais para visualizar interdependências","Use blocos de tempo protegidos","Revise e ajuste prioridades toda semana"],readings:["Sistemas de Pensamento – Donella Meadows","The Art of Thinking Clearly – Rolf Dobelli"]},
-        {id:6,name:"Gestão da ambiguidade",desc:"Age efetivamente mesmo sem todas as certezas",remedies:["Pratique tomar decisões sem buscar toda informação","Trabalhe em projetos com escopo aberto","Desenvolva planos com cenários alternativos","Reflita sobre situações passadas de incerteza"],readings:["Antifrágil – Nassim Taleb","Liderança em Tempos de Crise – Ronald Heifetz"]},
-      ]},
-      { name:"Criando o novo", comps:[
-        {id:7,name:"Coragem",desc:"Diz o que pensa e age mesmo diante de oposição ou risco",remedies:["Pratique compartilhar opiniões divergentes","Tome decisões impopulares mas necessárias","Busque situações além da zona de conforto","Reflita sobre decisões evitadas por medo"],readings:["Dare to Lead – Brené Brown","O Poder da Vulnerabilidade – Brené Brown"]},
-        {id:8,name:"Cultiva a inovação",desc:"Cria ideias novas e encontra soluções criativas",remedies:["Reserve 30 min por semana para explorar ideias","Aplique brainstorming reverso","Observe práticas de outras indústrias","Crie ambiente seguro para propor ideias"],readings:["De Onde Vêm as Boas Ideias – Steven Johnson","Sprint – Jake Knapp"]},
-        {id:9,name:"Mentalidade estratégica",desc:"Antecipa tendências futuras e posiciona a organização para o sucesso",remedies:["Conecte ações do dia a dia aos objetivos estratégicos","Facilite conversas sobre visão de futuro trimestralmente","Traduza estratégia em metas operacionais","Revise o planejamento com dados atualizados"],readings:["Boa Estratégia, Má Estratégia – Richard Rumelt","Playing to Win – A.G. Lafley"]},
-      ]},
-    ]
-  },
-  { name:"Resultados", key:"results", color:"#D97706", light:"#FEF3C7", text:"#92400E",
-    clusters:[
-      { name:"Tomando iniciativa", comps:[
-        {id:10,name:"Orientação para ação",desc:"Age rapidamente aproveitando oportunidades",remedies:["Defina uma ação concreta para cada reunião","Adote feito é melhor que perfeito","Crie ritual matinal de 3 prioridades","Reduza ciclos de planejamento"],readings:["Getting Things Done – David Allen","Essentialism – Greg McKeown"]},
-        {id:11,name:"Empreendedorismo",desc:"Identifica e explora oportunidades de negócio com ousadia",remedies:["Mapeie oportunidades inexploradas","Proponha projetos com business case","Conecte-se com empreendedores","Valide ideias com protótipos de baixo custo"],readings:["The Lean Startup – Eric Ries","Zero to One – Peter Thiel"]},
-        {id:12,name:"Engajamento",desc:"Demonstra energia e comprometimento com o trabalho",remedies:["Conecte tarefas ao propósito maior","Compartilhe o que te motiva","Reduza atividades que drenam energia","Celebre conquistas regularmente"],readings:["Drive – Daniel Pink","Trabalho Rico em Sentido – Barry Schwartz"]},
-      ]},
-      { name:"Gerenciando a execução", comps:[
-        {id:13,name:"Opera em ambiguidade",desc:"Opera eficientemente mesmo em cenários incertos",remedies:["Crie estrutura em situações pouco definidas","Comunique o que é conhecido","Ajuste planos rapidamente","Foque no próximo passo concreto"],readings:["Liderança em Tempos Difíceis – Doris Kearns","Volatility – Nathan Bennett"]},
-        {id:14,name:"Planejamento e alinhamento",desc:"Planeja e prioriza o trabalho para atingir metas",remedies:["Use roadmap trimestral com milestones mensais","Aprenda ferramentas de gestão de projetos","Delegue tarefas com critérios claros","Realize retrospectivas mensais"],readings:["Execution – Larry Bossidy","Sprint – Jake Knapp"]},
-        {id:15,name:"Promove responsabilização",desc:"Mantém a si mesmo e outros responsáveis pelos resultados",remedies:["Implante 1:1 semanais com cada liderado","Dê feedback direto quando acordos não são cumpridos","Documente compromissos em reuniões","Revise métricas de desempenho com a equipe"],readings:["Radical Candor – Kim Scott","O Poder da Responsabilidade – Mark Samuel"]},
-        {id:16,name:"Desenvolve processos",desc:"Cria e melhora processos eficientes para sustentar resultados",remedies:["Mapeie os processos principais e gargalos","Implemente indicadores de eficiência","Envolva a equipe na melhoria de processos","Documente processos para continuidade"],readings:["Tração – Gino Wickman","A Meta – Eliyahu Goldratt"]},
-      ]},
-      { name:"Foco em desempenho", comps:[
-        {id:17,name:"Orientação a resultados",desc:"Consistentemente entrega resultados excepcionais",remedies:["Estabeleça metas SMART com indicadores claros","Faça check-ins semanais de progresso","Identifique e remova os 2 maiores obstáculos","Celebre conquistas intermediárias"],readings:["Objectives and Key Results – Paul Niven","High Output Management – Andy Grove"]},
-        {id:18,name:"Otimismo",desc:"Mantém visão positiva mesmo diante de desafios",remedies:["Reencadre problemas como oportunidades","Compartilhe histórias de superação","Foque no que pode ser controlado","Crie rituais de reconhecimento de progresso"],readings:["Aprenda Otimismo – Martin Seligman","Mindset – Carol Dweck"]},
-        {id:19,name:"Capacidade de recursos",desc:"Encontra formas criativas de superar obstáculos",remedies:["Mapeie recursos além do orçamento direto","Resolva problemas com restrições propositais","Crie rede de contatos para desafios específicos","Documente soluções criativas"],readings:["Scarcity – Sendhil Mullainathan","A Arte da Improvisação – Keith Johnstone"]},
-      ]},
-    ]
-  },
-  { name:"Pessoas", key:"people", color:"#059669", light:"#D1FAE5", text:"#065F46",
-    clusters:[
-      { name:"Construindo relacionamentos", comps:[
-        {id:20,name:"Colabora",desc:"Constrói parcerias genuínas e trabalha bem com diferentes pessoas",remedies:["Mapeie as interdependências do seu trabalho","Participe de iniciativas cross-funcionais","Pratique ouvir ativamente","Ofereça ajuda proativa a colegas"],readings:["O Poder da Colaboração – Morten Hansen","Team of Teams – Stanley McChrystal"]},
-        {id:21,name:"Gestão de conflitos",desc:"Lida com situações de conflito de forma construtiva",remedies:["Nomeie o conflito ao invés de evitá-lo","Ouça a perspectiva do outro primeiro","Busque interesses comuns","Estabeleça acordos claros de comportamento"],readings:["Como Chegar ao Sim – Roger Fisher","Difficult Conversations – Douglas Stone"]},
-        {id:22,name:"Foco no cliente",desc:"Constrói relações sólidas e entrega soluções centradas no cliente",remedies:["Realize entrevistas regulares com clientes","Mapeie a jornada do cliente","Crie métricas de satisfação","Envolva a equipe em visitas a clientes"],readings:["Satisfação Garantida – Tony Hsieh","The Effortless Experience – Matthew Dixon"]},
-        {id:23,name:"Valoriza diferenças",desc:"Reconhece o valor de perspectivas e culturas diferentes",remedies:["Busque perspectivas de pessoas com backgrounds diferentes","Estude vieses inconscientes","Inclua vozes diversas nas decisões","Participe de programas de diversidade"],readings:["Unconscious Bias – Francesca Gino","A Coragem de Ser Imperfeito – Brené Brown"]},
-      ]},
-      { name:"Otimizando talentos", comps:[
-        {id:24,name:"Gestão da equipe",desc:"Cria e mantém equipes de alto desempenho",remedies:["Defina papéis, responsabilidades e metas claras","Promova rituais de equipe","Identifique e desenvolva pontos fortes individuais","Crie ambiente psicologicamente seguro"],readings:["The Five Dysfunctions of a Team – Patrick Lencioni","Equipes Brilhantes – Daniel Coyle"]},
-        {id:25,name:"Desenvolve talentos",desc:"Desenvolve intencionalmente pessoas para o futuro",remedies:["Realize PDIs formais com cada membro trimestralmente","Delegue tarefas de desenvolvimento","Ofereça feedback de desenvolvimento toda semana","Conecte cada liderado com um mentor"],readings:["FYI: For Your Improvement – Korn Ferry","O Gerente Minuto – Ken Blanchard"]},
-        {id:26,name:"Atrai talentos",desc:"Identifica e atrai pessoas de alto potencial",remedies:["Desenvolva proposta de valor para atrair talentos","Mantenha relacionamentos com talentos","Envolva-se no recrutamento","Construa reputação como líder que desenvolve pessoas"],readings:["Trabalhe com as Melhores Pessoas – Geoff Smart","Who – Geoff Smart & Randy Street"]},
-        {id:27,name:"Engaja e inspira",desc:"Cria clima que engaja e motiva as pessoas ao redor",remedies:["Conecte o trabalho ao propósito maior","Reconheça contribuições individuais","Crie oportunidades de crescimento","Ouça ativamente as aspirações dos colaboradores"],readings:["Drive – Daniel Pink","O Líder Que Não Tinha Cargo – Robin Sharma"]},
-      ]},
-      { name:"Influenciando pessoas", comps:[
-        {id:28,name:"Comunicação eficaz",desc:"Comunica-se de forma clara e convincente",remedies:["Adapte seu estilo de comunicação ao público","Pratique a estrutura PREP","Grave-se em apresentações","Simplifique documentos eliminando jargões"],readings:["Falar em Público – Dale Carnegie","Made to Stick – Chip Heath & Dan Heath"]},
-        {id:29,name:"Influência",desc:"Usa argumentos para influenciar sem autoridade formal",remedies:["Aprenda os princípios de persuasão de Cialdini","Construa argumentos baseados em dados e histórias","Entenda o que motiva cada stakeholder","Pratique o elevator pitch"],readings:["As Armas da Persuasão – Robert Cialdini","Influence Without Authority – Allan Cohen"]},
-        {id:30,name:"Habilidade organizacional",desc:"Navega com habilidade pela política organizacional",remedies:["Mapeie os stakeholders-chave e suas motivações","Observe como decisões realmente acontecem","Construa aliados em diferentes níveis","Antecipe resistências antes de propor mudanças"],readings:["Power – Jeffrey Pfeffer","O Homem que Mudou Tudo – Michael Lewis"]},
-        {id:31,name:"Constrói redes",desc:"Cria e mantém redes de contato relevantes",remedies:["Estabeleça meta: 2 novos contatos por mês","Mantenha contato regular com sua rede","Participe de eventos do setor","Ofereça valor à sua rede antes de pedir ajuda"],readings:["Never Eat Alone – Keith Ferrazzi","A Arte de Fazer Conexões – Herminia Ibarra"]},
-      ]},
-    ]
-  },
-  { name:"Eu", key:"self", color:"#DB2777", light:"#FCE7F3", text:"#9D174D",
-    clusters:[
-      { name:"Sendo autêntico", comps:[
-        {id:32,name:"Autoconhecimento",desc:"Conhece seus pontos fortes e limitações com clareza",remedies:["Solicite feedback 360° ao menos uma vez por ano","Mantenha diário de liderança semanal","Trabalhe com coach executivo ou mentor","Compare sua autopercepção com a dos outros"],readings:["Insight – Tasha Eurich","Liderança e Autoengano – Arbinger Institute"]},
-        {id:33,name:"Integridade e confiança",desc:"É visto como honesto, íntegro e confiável",remedies:["Cumpra sempre o que prometeu","Seja transparente sobre erros cometidos","Não fale de pessoas diferente na ausência delas","Alinhe o que diz com o que faz"],readings:["A Velocidade da Confiança – Stephen M.R. Covey","Dare to Lead – Brené Brown"]},
-        {id:34,name:"Equanimidade",desc:"Mantém-se composto e estável mesmo sob pressão",remedies:["Desenvolva rituais de recuperação: exercício e sono","Reencadre situações difíceis buscando aprendizado","Construa rede de suporte emocional","Identifique seus gatilhos de estresse"],readings:["Grit – Angela Duckworth","Antifrágil – Nassim Taleb"]},
-      ]},
-      { name:"Sendo aberto", comps:[
-        {id:35,name:"Aprende ativamente",desc:"Busca ativamente aprender e crescer continuamente",remedies:["Crie plano de aprendizado pessoal trimestral","Dedique 1h por semana para aprendizado","Compartilhe com a equipe o que está aprendendo","Solicite desafios de desenvolvimento ao gestor"],readings:["Mindset – Carol Dweck","Ultralearning – Scott Young"]},
-        {id:36,name:"Agilidade na mudança",desc:"Adapta-se rapidamente em ambientes de constante mudança",remedies:["Volunteere-se para projetos de transformação","Pratique desaprender processos antigos","Reflita sobre mudanças passadas bem-sucedidas","Construa flexibilidade no seu estilo de trabalho"],readings:["Quem Mexeu no Meu Queijo? – Spencer Johnson","Leading Change – John Kotter"]},
-        {id:37,name:"Autodesenvolvimento",desc:"Assume responsabilidade pelo próprio desenvolvimento",remedies:["Defina onde quer estar em 3 anos","Busque feedbacks desafiadores","Crie portfólio de experiências diversas","Revise seu plano de carreira semestralmente"],readings:["O Plano de Desenvolvimento – Dave Ulrich","Working Identity – Herminia Ibarra"]},
-      ]},
-      { name:"Sendo flexível", comps:[
-        {id:38,name:"Agilidade de aprendizado",desc:"Aprende rapidamente com a experiência e aplica em situações novas",remedies:["Após cada projeto faça revisão pessoal","Busque experiências fora da zona de conforto","Leia sobre áreas fora da sua especialidade","Observe como pessoas de alta performance aprendem"],readings:["Learning Agility – George Hallenbeck","The Growth Mindset Coach – Annie Brock"]},
-      ]},
-    ]
-  }
+const COMPETENCIAS = [
+  { id:1, fator:"Pensamento", nome:"Visão de negócio", desc:"Aplica conhecimento do negócio e mercado para avançar os objetivos da organização", acoes:["Leia relatórios setoriais mensalmente e analise tendências do mercado","Participe de reuniões estratégicas observando como decisões são tomadas","Converse com clientes internos e externos para entender necessidades reais","Mapeie os principais indicadores financeiros da sua área e acompanhe-os","Conecte suas decisões operacionais ao impacto no negócio"], tecnicas:["Análise SWOT do seu departamento","Mapeamento de stakeholders e suas expectativas"], leituras:["Estratégia Competitiva – Michael Porter","O Lado Difícil das Situações Difíceis – Ben Horowitz"] },
+  { id:2, fator:"Pensamento", nome:"Qualidade da decisão", desc:"Toma boas decisões mesmo com informações incompletas", acoes:["Use frameworks de decisão como Matriz de Eisenhower","Documente suas decisões e revise os resultados após 30 dias","Busque perspectivas diversas antes de decidir","Estabeleça critérios claros de sucesso antes de decidir","Pratique decidir com 70% das informações disponíveis"], tecnicas:["Análise de prós e contras estruturada","Técnica dos 6 chapéus do pensamento"], leituras:["Pensando Devagar e Depressa – Daniel Kahneman","Decisive – Chip Heath & Dan Heath"] },
+  { id:3, fator:"Pensamento", nome:"Mentalidade estratégica", desc:"Antecipa tendências futuras e posiciona a organização para o sucesso", acoes:["Conecte ações do dia a dia aos objetivos estratégicos","Facilite conversas sobre visão de futuro trimestralmente","Traduza estratégia em metas operacionais mensuráveis","Revise o planejamento com dados atualizados","Leia sobre tendências do setor mensalmente"], tecnicas:["Cenários futuros — planejamento por cenários","OKRs — Objectives and Key Results"], leituras:["Boa Estratégia, Má Estratégia – Richard Rumelt","Playing to Win – A.G. Lafley"] },
+  { id:4, fator:"Pensamento", nome:"Gestão da ambiguidade", desc:"Age efetivamente mesmo sem todas as certezas", acoes:["Pratique tomar decisões sem buscar toda informação disponível","Trabalhe em projetos com escopo propositalmente aberto","Desenvolva planos com cenários alternativos","Reflita sobre situações passadas de incerteza e o que funcionou","Foque no próximo passo concreto possível"], tecnicas:["Planejamento por cenários: otimista, provável e pessimista","Prototipagem rápida de soluções"], leituras:["Antifrágil – Nassim Taleb","Liderança em Tempos de Crise – Ronald Heifetz"] },
+  { id:5, fator:"Pensamento", nome:"Cultiva a inovação", desc:"Cria ideias novas e encontra soluções criativas para problemas", acoes:["Reserve 30 min por semana para explorar ideias sem julgamento","Aplique brainstorming reverso: como piorar o problema?","Observe práticas de outras indústrias e adapte à sua realidade","Crie ambiente seguro para a equipe propor ideias","Implemente pelo menos uma ideia nova por mês"], tecnicas:["Design Thinking aplicado ao problema","SCAMPER para geração de ideias"], leituras:["De Onde Vêm as Boas Ideias – Steven Johnson","Sprint – Jake Knapp"] },
+  { id:6, fator:"Resultados", nome:"Orientação para ação", desc:"Age rapidamente aproveitando oportunidades sem esperar autorização", acoes:["Defina uma ação concreta para cada reunião que participar","Adote feito é melhor que perfeito para tarefas de baixo risco","Crie ritual matinal de definir as 3 prioridades do dia","Reduza ciclos de planejamento: teste, aprenda e ajuste","Elimine uma atividade que não gera valor por semana"], tecnicas:["Método GTD — Getting Things Done","Técnica Pomodoro para execução focada"], leituras:["Getting Things Done – David Allen","Essentialism – Greg McKeown"] },
+  { id:7, fator:"Resultados", nome:"Planejamento e alinhamento", desc:"Planeja e prioriza o trabalho para atingir metas organizacionais", acoes:["Use roadmap trimestral com milestones mensais visíveis para a equipe","Aprenda e use ferramentas de gestão de projetos","Pratique delegar tarefas com critérios claros de qualidade e prazo","Realize retrospectivas mensais com lições aprendidas documentadas","Revise prioridades explicitamente toda semana com a equipe"], tecnicas:["Método Kanban para gestão visual do trabalho","OKRs para alinhamento de metas com a estratégia"], leituras:["Execution – Larry Bossidy","Sprint – Jake Knapp"] },
+  { id:8, fator:"Resultados", nome:"Orientação a resultados", desc:"Consistentemente entrega resultados excepcionais mesmo em adversidade", acoes:["Estabeleça metas SMART com indicadores claros de acompanhamento","Faça check-ins semanais de progresso com sua equipe","Identifique e remova os 2 maiores obstáculos de entrega da equipe","Celebre conquistas intermediárias para manter a motivação","Revise métricas de desempenho abertamente com a equipe"], tecnicas:["Dashboard de indicadores de desempenho","Weekly Review — revisão semanal de metas"], leituras:["High Output Management – Andy Grove","Measure What Matters – John Doerr"] },
+  { id:9, fator:"Resultados", nome:"Promove responsabilização", desc:"Mantém a si mesmo e outros responsáveis pelos resultados acordados", acoes:["Implante 1:1 semanais com cada liderado","Dê feedback direto e imediato quando acordos não são cumpridos","Documente compromissos em reuniões e compartilhe com todos","Revise métricas de desempenho abertamente com a equipe","Crie acordos claros de entrega com prazos bem definidos"], tecnicas:["Reuniões de accountability estruturadas","Contratos de performance individuais"], leituras:["Radical Candor – Kim Scott","O Poder da Responsabilidade – Mark Samuel"] },
+  { id:10, fator:"Resultados", nome:"Empreendedorismo", desc:"Identifica e explora oportunidades de negócio com ousadia", acoes:["Mapeie oportunidades inexploradas na sua área ou mercado","Proponha projetos novos com business case estruturado","Valide ideias rapidamente com protótipos de baixo custo","Conecte-se com empreendedores para trocar experiências","Implemente um piloto antes de escalar qualquer ideia nova"], tecnicas:["Lean Canvas para validação de ideias de negócio","Análise de mercado e mapeamento de concorrentes"], leituras:["The Lean Startup – Eric Ries","Zero to One – Peter Thiel"] },
+  { id:11, fator:"Pessoas", nome:"Comunicação eficaz", desc:"Comunica-se de forma clara, convincente e adaptada ao público", acoes:["Adapte seu estilo de comunicação ao público: técnico ou estratégico","Pratique a estrutura PREP: Ponto, Razão, Exemplo, Ponto","Grave-se em apresentações para identificar oportunidades de melhoria","Simplifique documentos eliminando jargões desnecessários","Confirme entendimento após comunicações importantes"], tecnicas:["Storytelling para apresentações de impacto","Comunicação Não-Violenta — CNV"], leituras:["Falar em Público – Dale Carnegie","Made to Stick – Chip Heath & Dan Heath"] },
+  { id:12, fator:"Pessoas", nome:"Colabora", desc:"Constrói parcerias genuínas e trabalha bem com diferentes tipos de pessoas", acoes:["Mapeie as interdependências do seu trabalho e fortaleça essas relações","Participe de iniciativas cross-funcionais fora da sua área","Pratique ouvir ativamente sem interromper em reuniões","Ofereça ajuda proativa a colegas antes de serem solicitados","Reconheça publicamente a contribuição de outros"], tecnicas:["Mapa de stakeholders e colaboradores estratégicos","Dinâmicas de team building com a equipe"], leituras:["O Poder da Colaboração – Morten Hansen","Team of Teams – Stanley McChrystal"] },
+  { id:13, fator:"Pessoas", nome:"Desenvolve talentos", desc:"Desenvolve intencionalmente pessoas para o futuro da organização", acoes:["Realize PDIs formais com cada membro da equipe trimestralmente","Delegue tarefas de desenvolvimento, não apenas operacionais","Ofereça feedback de desenvolvimento toda semana — não só corretivo","Conecte cada liderado com um mentor interno relevante","Identifique e explore os pontos fortes individuais de cada pessoa"], tecnicas:["Modelo 70-20-10 para desenvolvimento de talentos","Feedback SBI: Situação, Comportamento, Impacto"], leituras:["FYI: For Your Improvement – Korn Ferry","O Gerente Minuto – Ken Blanchard"] },
+  { id:14, fator:"Pessoas", nome:"Gestão da equipe", desc:"Cria e mantém equipes de alto desempenho com foco em resultados coletivos", acoes:["Defina papéis, responsabilidades e metas claras para cada membro","Promova rituais de equipe: reuniões de alinhamento e celebrações","Identifique e desenvolva os pontos fortes individuais de cada pessoa","Crie ambiente psicologicamente seguro onde erros são aprendizados","Gerencie conflitos de forma construtiva e direta"], tecnicas:["Modelo de equipes de alta performance de Lencioni","Retrospectivas ágeis mensais com a equipe"], leituras:["The Five Dysfunctions of a Team – Patrick Lencioni","Equipes Brilhantes – Daniel Coyle"] },
+  { id:15, fator:"Pessoas", nome:"Influência", desc:"Usa argumentos, dados e relacionamentos para influenciar sem autoridade formal", acoes:["Aprenda os princípios de persuasão de Cialdini e aplique no dia a dia","Construa argumentos baseados em dados e histórias reais","Entenda o que motiva cada stakeholder antes de apresentar uma proposta","Pratique apresentar ideias em 2 minutos — elevator pitch","Antecipe resistências e prepare argumentos antes de propor mudanças"], tecnicas:["Mapa de influência e poder organizacional","Técnica de negociação baseada em interesses comuns"], leituras:["As Armas da Persuasão – Robert Cialdini","Influence Without Authority – Allan Cohen"] },
+  { id:16, fator:"Pessoas", nome:"Gestão de conflitos", desc:"Lida com situações de conflito de forma hábil e construtiva", acoes:["Nomeie o conflito explicitamente ao invés de evitá-lo","Ouça ativamente a perspectiva do outro antes de apresentar a sua","Busque interesses comuns por trás das posições opostas","Estabeleça acordos claros de comportamento na equipe","Envolva um terceiro neutro quando necessário"], tecnicas:["Modelo Thomas-Kilmann de resolução de conflitos","Comunicação Não-Violenta — CNV"], leituras:["Como Chegar ao Sim – Roger Fisher","Difficult Conversations – Douglas Stone"] },
+  { id:17, fator:"Eu", nome:"Autoconhecimento", desc:"Conhece seus pontos fortes e limitações com clareza e humildade", acoes:["Solicite feedback 360° estruturado ao menos uma vez por ano","Mantenha diário de liderança: registre decisões e reflexões semanalmente","Trabalhe com coach executivo ou mentor para desenvolvimento pessoal","Compare sua autopercepção com a percepção dos outros regularmente","Reflita semanalmente sobre suas reações e decisões mais difíceis"], tecnicas:["Assessment de perfil comportamental","Janela de Johari para mapear autoconhecimento"], leituras:["Insight – Tasha Eurich","Liderança e Autoengano – Arbinger Institute"] },
+  { id:18, fator:"Eu", nome:"Integridade e confiança", desc:"É visto como honesto, íntegro e confiável por todos ao redor", acoes:["Cumpra sempre o que prometeu ou comunique proativamente quando não conseguir","Seja transparente sobre erros cometidos e o que fará diferente","Alinhe consistentemente o que diz com o que faz no dia a dia","Não fale de pessoas de forma diferente na ausência delas","Assuma responsabilidade pelos resultados da sua equipe"], tecnicas:["Autoavaliação regular de valores e comportamentos","Contrato de integridade pessoal com metas de comportamento"], leituras:["A Velocidade da Confiança – Stephen M.R. Covey","Dare to Lead – Brené Brown"] },
+  { id:19, fator:"Eu", nome:"Aprende ativamente", desc:"Busca ativamente aprender e crescer continuamente com novas experiências", acoes:["Crie plano de aprendizado pessoal com metas trimestrais mensuráveis","Dedique ao menos 1h por semana para aprendizado fora das demandas do trabalho","Compartilhe com a equipe o que está aprendendo para consolidar o conhecimento","Solicite desafios de desenvolvimento ao seu gestor regularmente","Aplique imediatamente o que aprendeu em situações reais de trabalho"], tecnicas:["Método Feynman para aprendizado profundo e acelerado","Mapa mental para consolidar e organizar novos conhecimentos"], leituras:["Mindset – Carol Dweck","Ultralearning – Scott Young"] },
+  { id:20, fator:"Eu", nome:"Agilidade de aprendizado", desc:"Aprende rapidamente com a experiência e aplica o aprendizado em situações novas", acoes:["Após cada projeto faça revisão pessoal: o que aprendi? O que faria diferente?","Busque propositalmente experiências fora da sua zona de conforto profissional","Leia sobre áreas fora da sua especialidade para ampliar repertório","Observe como pessoas de alta performance aprendem e modele comportamentos","Peça para ser colocado em projetos desafiadores e novos"], tecnicas:["After Action Review — AAR para aprendizado pós-projeto","Portfólio de experiências diversas para ampliar perspectiva"], leituras:["Learning Agility – George Hallenbeck","The Growth Mindset Coach – Annie Brock"] },
 ];
 
-const ALL_COMPS = FACTORS.flatMap(f => f.clusters.flatMap(c => c.comps));
-const FACTOR_OF: Record<number, typeof FACTORS[0]> = {};
-ALL_COMPS.forEach(c => {
-  const f = FACTORS.find(fac => fac.clusters.flatMap(cl => cl.comps).some(x => x.id === c.id));
-  if (f) FACTOR_OF[c.id] = f;
-});
-
-const NIVEL_OPTS = [
-  {key:"1",label:"Iniciante",color:"#EF4444"},
-  {key:"2",label:"Em desenvolvimento",color:"#F97316"},
-  {key:"3",label:"Adequado",color:"#EAB308"},
-  {key:"4",label:"Avançado",color:"#22C55E"},
-  {key:"5",label:"Referência",color:"#7C3AED"},
+const ESCALA = [
+  { v:1, label:"Muito abaixo do esperado", cor:"#dc2626" },
+  { v:2, label:"Abaixo do esperado", cor:"#ea580c" },
+  { v:3, label:"Dentro do esperado", cor:"#ca8a04" },
+  { v:4, label:"Acima do esperado", cor:"#16a34a" },
+  { v:5, label:"Muito acima do esperado", cor:"#15803d" },
 ];
+
+const NAVY="#0a1628", NAVY2="#112240", TEAL="#00b4d8", LIME="#84cc16", WHITE="#ffffff", GRAY="#64748b", GRAY_L="#f1f5f9", GRAY_B="#e2e8f0";
 
 async function apiCall(action: string, extra: object = {}) {
-  const res = await fetch("/api/notion", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, ...extra }),
-  });
-  if (!res.ok) throw new Error("API error " + res.status);
+  const res = await fetch("/api/notion", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({action,...extra}) });
+  if (!res.ok) throw new Error("API error "+res.status);
   return res.json();
 }
 
-function Avatar({ name, size = 40, color = "#7C3AED" }: { name: string; size?: number; color?: string }) {
-  const ini = (name || "?").split(" ").slice(0, 2).map((w: string) => w[0]).join("").toUpperCase();
-  return <div style={{ width: size, height: size, borderRadius: "50%", background: color + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: size * .36, fontWeight: 700, color, flexShrink: 0 }}>{ini}</div>;
+function Avatar({ name, size=40 }: { name:string; size?:number }) {
+  const ini = (name||"?").split(" ").slice(0,2).map((w:string)=>w[0]).join("").toUpperCase();
+  return <div style={{width:size,height:size,borderRadius:"50%",background:TEAL+"33",display:"flex",alignItems:"center",justifyContent:"center",fontSize:size*.35,fontWeight:700,color:TEAL,flexShrink:0}}>{ini}</div>;
 }
 
-function RadarChart({ names, antes, depois, size = 240 }: any) {
-  if (!names || names.length < 3) return null;
-  const cx = size/2, cy = size/2, r = size*.35, n = names.length;
-  const ang = (i: number) => (Math.PI*2*i)/n - Math.PI/2;
-  const pt = (val: number, i: number) => { const a=ang(i), d=(val/5)*r; return [cx+d*Math.cos(a), cy+d*Math.sin(a)]; };
+function RadarChart({ names, gestor, auto, consenso, size=260 }: any) {
+  if (!names||names.length<3) return null;
+  const cx=size/2,cy=size/2,r=size*.33,n=names.length;
+  const ang=(i:number)=>(Math.PI*2*i)/n-Math.PI/2;
+  const pt=(val:number,i:number)=>{const a=ang(i),d=(val/5)*r;return[cx+d*Math.cos(a),cy+d*Math.sin(a)];};
   return (
     <svg viewBox={`0 0 ${size} ${size}`} width={size} height={size} style={{display:"block",margin:"0 auto"}}>
-      {[1,2,3,4,5].map(ring => { const pts=Array.from({length:n},(_,i)=>{const a=ang(i),d=(ring/5)*r;return`${cx+d*Math.cos(a)},${cy+d*Math.sin(a)}`;});return <polygon key={ring} points={pts.join(" ")} fill="none" stroke="#e5e7eb" strokeWidth="0.7"/>; })}
-      {Array.from({length:n},(_,i)=>{const[x,y]=pt(5,i);return<line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e5e7eb" strokeWidth="0.7"/>;  })}
-      <polygon points={names.map((_:any,i:number)=>pt(antes[i]||0,i).join(",")).join(" ")} fill="#7C3AED18" stroke="#7C3AED" strokeWidth="2"/>
-      {depois&&<polygon points={names.map((_:any,i:number)=>pt(depois[i]||0,i).join(",")).join(" ")} fill="#05966918" stroke="#059669" strokeWidth="2" strokeDasharray="5 3"/>}
-      {names.map((c:string,i:number)=>{const a=ang(i),lx=cx+(r+22)*Math.cos(a),ly=cy+(r+22)*Math.sin(a),anchor=lx<cx-5?"end":lx>cx+5?"start":"middle";return<text key={i} x={lx} y={ly} textAnchor={anchor} fontSize="9" fill="#6b7280" dominantBaseline="middle">{c.length>12?c.slice(0,11)+"…":c}</text>;})}
+      {[1,2,3,4,5].map(ring=>{const pts=Array.from({length:n},(_,i)=>{const a=ang(i),d=(ring/5)*r;return`${cx+d*Math.cos(a)},${cy+d*Math.sin(a)}`;});return<polygon key={ring} points={pts.join(" ")} fill="none" stroke={ring===3?"#84cc1644":"#e2e8f0"} strokeWidth={ring===3?1.5:.7}/>;  })}
+      {Array.from({length:n},(_,i)=>{const[x,y]=pt(5,i);return<line key={i} x1={cx} y1={cy} x2={x} y2={y} stroke="#e2e8f0" strokeWidth=".7"/>;  })}
+      {gestor&&<polygon points={names.map((_:any,i:number)=>pt(gestor[i]||0,i).join(",")).join(" ")} fill={NAVY+"22"} stroke={NAVY} strokeWidth="2"/>}
+      {auto&&<polygon points={names.map((_:any,i:number)=>pt(auto[i]||0,i).join(",")).join(" ")} fill={TEAL+"22"} stroke={TEAL} strokeWidth="2" strokeDasharray="5 3"/>}
+      {consenso&&<polygon points={names.map((_:any,i:number)=>pt(consenso[i]||0,i).join(",")).join(" ")} fill={LIME+"22"} stroke={LIME} strokeWidth="2"/>}
+      {names.map((c:string,i:number)=>{const a=ang(i),lx=cx+(r+24)*Math.cos(a),ly=cy+(r+24)*Math.sin(a),anchor=lx<cx-5?"end":lx>cx+5?"start":"middle";return<text key={i} x={lx} y={ly} textAnchor={anchor} fontSize="9" fill={GRAY} dominantBaseline="middle">{c.length>13?c.slice(0,12)+"…":c}</text>;})}
     </svg>
   );
 }
 
-function Toast({ msg, type="success" }: { msg:string; type?:string }) {
-  return <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:type==="success"?"#059669":type==="error"?"#DC2626":"#7C3AED",color:"#fff",padding:"12px 20px",borderRadius:12,fontSize:14,fontWeight:500,zIndex:9999,boxShadow:"0 4px 20px rgba(0,0,0,.2)",whiteSpace:"nowrap"}}>{msg}</div>;
+function Toast({ msg, type="ok" }: { msg:string; type?:string }) {
+  return <div style={{position:"fixed",bottom:24,left:"50%",transform:"translateX(-50%)",background:type==="err"?"#dc2626":LIME,color:type==="err"?WHITE:NAVY,padding:"12px 24px",borderRadius:12,fontWeight:600,fontSize:14,zIndex:9999,boxShadow:"0 4px 20px rgba(0,0,0,.3)"}}>{msg}</div>;
 }
 
-function Spinner({ color="#7C3AED" }: { color?:string }) {
-  return <div style={{display:"inline-block",width:18,height:18,border:`2px solid ${color}33`,borderTop:`2px solid ${color}`,borderRadius:"50%",animation:"spin .7s linear infinite"}}><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>;
+function Spinner({color=LIME}:{color?:string}) {
+  return <div style={{width:18,height:18,border:`2px solid ${color}33`,borderTop:`2px solid ${color}`,borderRadius:"50%",animation:"spin .7s linear infinite",display:"inline-block"}}><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>;
+}
+
+function Btn({ children, onClick, color=LIME, outline=false, disabled=false, size="md" }: any) {
+  return <button onClick={onClick} disabled={disabled} style={{background:outline?"transparent":(disabled?GRAY_B:color),color:outline?color:(disabled?GRAY:NAVY),border:outline?`2px solid ${color}`:"none",borderRadius:10,padding:size==="sm"?"7px 14px":"12px 24px",fontSize:size==="sm"?12:14,fontWeight:700,cursor:disabled?"default":"pointer"}}>{children}</button>;
+}
+
+function ScaleBtn({ value, onChange }: { value:number|null; onChange:(v:number)=>void }) {
+  return (
+    <div>
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:4}}>
+        {ESCALA.map(e=><button key={e.v} onClick={()=>onChange(e.v)} style={{padding:"8px 16px",borderRadius:8,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:value===e.v?e.cor:GRAY_L,color:value===e.v?WHITE:GRAY}}>{e.v}</button>)}
+      </div>
+      {value&&<p style={{fontSize:11,color:ESCALA[value-1].cor,fontWeight:600,margin:"4px 0 0"}}>{value} — {ESCALA[value-1].label}</p>}
+      {!value&&<p style={{fontSize:11,color:GRAY,margin:"4px 0 0"}}>1 = Muito abaixo · 3 = Dentro do esperado · 5 = Muito acima</p>}
+    </div>
+  );
 }
 
 export default function Dashboard() {
   const { user } = useUser();
   const { signOut } = useClerk();
-  const [screen, setScreen] = useState<"dashboard"|"new1"|"new2"|"new3"|"view"|"update">("dashboard");
-  const [pdis, setPdis] = useState<any[]>([]);
+  const [screen, setScreen] = useState<"dash"|"criar"|"ciclo"|"gestor"|"auto"|"analise">("dash");
+  const [ciclos, setCiclos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<any>(null);
-  const [form, setForm] = useState({ nome:"", cargo:"", area:"", prazo:"" });
-  const [selected, setSelected] = useState<Record<number,boolean>>({});
-  const [nivelAntes, setNivelAntes] = useState<Record<number,string>>({});
-  const [obsAntes, setObsAntes] = useState<Record<number,string>>({});
-  const [viewPdi, setViewPdi] = useState<any>(null);
-  const [nivelDepois, setNivelDepois] = useState<Record<number,string>>({});
-  const [obsDepois, setObsDepois] = useState<Record<number,string>>({});
-  const [search, setSearch] = useState("");
-  const [filterFactor, setFilterFactor] = useState("all");
+  const [cicloAtual, setCicloAtual] = useState<any>(null);
+  const [compsSel, setCompsSel] = useState<number[]>([]);
+  const [form, setForm] = useState({colaborador:"",gestor:"",rh:"",cargo:"",area:""});
+  const [avalG, setAvalG] = useState<Record<number,number>>({});
+  const [fatosG, setFatosG] = useState<Record<number,string>>({});
+  const [avalA, setAvalA] = useState<Record<number,number>>({});
+  const [fatosA, setFatosA] = useState<Record<number,string>>({});
+  const [consenso, setConsenso] = useState<Record<number,number>>({});
+  const [impacto, setImpacto] = useState<Record<number,string>>({});
+  const [expect, setExpect] = useState<Record<number,string>>({});
+  const [metodo, setMetodo] = useState<"media"|"consenso">("media");
 
-  useEffect(() => {
-    if (user?.primaryEmailAddress?.emailAddress) {
+  function showToast(msg:string, type="ok") { setToast({msg,type}); setTimeout(()=>setToast(null),3000); }
+
+  useEffect(()=>{
+    if(user?.primaryEmailAddress?.emailAddress) {
       setLoading(true);
-      apiCall("list", { gestorEmail: user.primaryEmailAddress.emailAddress })
-        .then(data => setPdis(data || []))
-        .catch(() => showToast("Erro ao carregar PDIs.", "error"))
-        .finally(() => setLoading(false));
+      apiCall("list",{rhEmail:user.primaryEmailAddress.emailAddress}).then(d=>setCiclos(d||[])).catch(()=>showToast("Erro ao carregar ciclos","err")).finally(()=>setLoading(false));
     }
-  }, [user]);
+  },[user]);
 
-  function showToast(msg: string, type="success") { setToast({msg,type}); setTimeout(()=>setToast(null),3500); }
-  function selCount() { return Object.values(selected).filter(Boolean).length; }
-  function toggleComp(id: number) { if(!selected[id]&&selCount()>=5) return; setSelected(p=>({...p,[id]:!p[id]})); }
-  function startNew() { setForm({nome:"",cargo:"",area:"",prazo:""}); setSelected({}); setNivelAntes({}); setObsAntes({}); setScreen("new1"); }
+  const compsDociclo = COMPETENCIAS.filter(c=>cicloAtual?.comps?.includes(c.id));
 
-  async function handleSavePdi() {
+  function getMediaOuConsenso(id:number) {
+    if(metodo==="consenso"&&consenso[id]) return consenso[id];
+    const g=avalG[id],a=avalA[id];
+    if(g&&a) return Math.round(((g+a)/2)*10)/10;
+    return g||a||null;
+  }
+
+  function get3Piores() {
+    return compsDociclo.map(c=>({...c,nota:getMediaOuConsenso(c.id)})).filter(c=>c.nota!==null).sort((a:any,b:any)=>a.nota-b.nota).slice(0,3);
+  }
+
+  async function criarCiclo() {
+    if(compsSel.length<6||compsSel.length>15){showToast("Selecione entre 6 e 15 competências","err");return;}
+    if(!form.colaborador||!form.gestor||!form.rh){showToast("Preencha todos os campos obrigatórios","err");return;}
     setSaving(true);
-    const comps = ALL_COMPS.filter(c=>selected[c.id]).map(c=>({id:c.id,name:c.name,nivelAntes:parseInt(nivelAntes[c.id]||"1"),nivelDepois:null,obsAntes:obsAntes[c.id]||"",obsDepois:""}));
-    const pdi = {id:"pdi_"+Date.now(),gestorEmail:user?.primaryEmailAddress?.emailAddress||"",gestorNome:user?.fullName||"",...form,comps,createdAt:new Date().toISOString(),status:"Em andamento"};
-    try { const result=await apiCall("create",{pdi}); setPdis(p=>[{...pdi,pageId:result.pageId},...p]); setScreen("dashboard"); showToast("PDI salvo no Notion! ✓"); }
-    catch { showToast("Erro ao salvar no Notion.","error"); }
+    const ciclo={id:"ciclo_"+Date.now(),...form,comps:compsSel,criadoEm:new Date().toLocaleDateString("pt-BR")};
+    try {
+      const res=await apiCall("create",{ciclo});
+      const novo={...ciclo,pageId:res.pageId};
+      setCiclos(p=>[novo,...p]);
+      setCicloAtual(novo);
+      setScreen("ciclo");
+      showToast("Ciclo criado! Links gerados.");
+    } catch { showToast("Erro ao criar ciclo","err"); }
     setSaving(false);
   }
 
-  async function handleSaveUpdate() {
+  async function salvarGestor() {
     setSaving(true);
-    const compsAtualizados = viewPdi.comps.map((c:any)=>({...c,nivelDepois:parseInt(nivelDepois[c.id]||String(c.nivelAntes)),obsDepois:obsDepois[c.id]||""}));
-    try { await apiCall("update",{pageId:viewPdi.pageId,comps:compsAtualizados}); const updated={...viewPdi,comps:compsAtualizados,status:"Concluído"}; setViewPdi(updated); setPdis(p=>p.map((x:any)=>x.pageId===viewPdi.pageId?updated:x)); setScreen("view"); showToast("Avaliação salva! ✓"); }
-    catch { showToast("Erro ao atualizar.","error"); }
+    try {
+      await apiCall("saveGestor",{pageId:cicloAtual.pageId,dados:{...Object.fromEntries(Object.entries(avalG).map(([k,v])=>[k,v]))},fatosGestor:fatosG});
+      showToast("Avaliação do gestor salva!");
+      setScreen("ciclo");
+    } catch { showToast("Erro ao salvar","err"); }
     setSaving(false);
   }
 
-  function copyLink(pdi:any) { const url=`${window.location.origin}/pdi/${pdi.pageId}`; navigator.clipboard.writeText(url).then(()=>showToast("Link copiado! 🔗")); }
+  async function salvarAuto() {
+    setSaving(true);
+    try {
+      await apiCall("saveAuto",{pageId:cicloAtual.pageId,dados:{...Object.fromEntries(Object.entries(avalA).map(([k,v])=>[k,v]))},fatosAuto:fatosA});
+      showToast("Autoavaliação salva!");
+      setScreen("ciclo");
+    } catch { showToast("Erro ao salvar","err"); }
+    setSaving(false);
+  }
 
-  const filteredComps = ALL_COMPS.filter(c=>{
-    const ms=c.name.toLowerCase().includes(search.toLowerCase());
-    const mf=filterFactor==="all"||FACTORS.find(f=>f.key===filterFactor)?.clusters.flatMap(cl=>cl.comps).some(x=>x.id===c.id);
-    return ms&&mf;
-  });
+  function exportPDF() {
+    const piores=get3Piores();
+    const win=window.open("","_blank");
+    win!.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Avança Talentos — ${cicloAtual?.colaborador}</title>
+    <style>body{font-family:system-ui,sans-serif;padding:40px;color:#0a1628;max-width:780px;margin:0 auto}h2{color:#0a1628;border-bottom:2px solid #84cc16;padding-bottom:6px;margin-top:32px}table{width:100%;border-collapse:collapse;font-size:13px;margin:16px 0}th{background:#0a1628;color:#fff;padding:10px}td{padding:10px;border-bottom:1px solid #e2e8f0;font-size:12px}.ass{display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;margin-top:60px}.ass-item{border-top:2px solid #0a1628;padding-top:10px;font-size:13px}@media print{body{padding:20px}}</style></head><body>
+    <div style="background:linear-gradient(135deg,#0a1628,#112240);color:#fff;padding:32px;border-radius:12px;margin-bottom:32px">
+      <div style="display:inline-block;background:rgba(132,204,22,.2);border:1px solid rgba(132,204,22,.4);color:#84cc16;padding:4px 14px;border-radius:99px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px">Avaliação e Desenvolvimento de Talentos</div>
+      <h1 style="color:#fff;margin:0 0 4px;font-size:28px">Avança <span style="color:#84cc16">Talentos</span></h1>
+      <p style="color:#90e0ef;margin:0 0 24px;font-size:14px">Sua ferramenta de avaliação e desenvolvimento de talentos</p>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;font-size:13px">
+        <div><p style="color:#90e0ef;margin:0;font-size:11px">COLABORADOR</p><p style="color:#fff;font-weight:700;margin:4px 0 0">${cicloAtual?.colaborador}</p></div>
+        <div><p style="color:#90e0ef;margin:0;font-size:11px">CARGO</p><p style="color:#fff;font-weight:700;margin:4px 0 0">${cicloAtual?.cargo||"—"}</p></div>
+        <div><p style="color:#90e0ef;margin:0;font-size:11px">ÁREA</p><p style="color:#fff;font-weight:700;margin:4px 0 0">${cicloAtual?.area||"—"}</p></div>
+        <div><p style="color:#90e0ef;margin:0;font-size:11px">GESTOR</p><p style="color:#fff;font-weight:700;margin:4px 0 0">${cicloAtual?.gestor}</p></div>
+        <div><p style="color:#90e0ef;margin:0;font-size:11px">RH/CONSULTOR</p><p style="color:#fff;font-weight:700;margin:4px 0 0">${cicloAtual?.rh}</p></div>
+        <div><p style="color:#90e0ef;margin:0;font-size:11px">DATA</p><p style="color:#fff;font-weight:700;margin:4px 0 0">${cicloAtual?.criadoEm}</p></div>
+      </div>
+    </div>
+    <h2>Resultado da Avaliação</h2>
+    <table><tr><th>Competência</th><th>Gestor</th><th>Autoavaliação</th><th>Resultado Final</th><th>Fatos Gestor</th><th>Fatos Colaborador</th></tr>
+    ${compsDociclo.map(c=>`<tr><td><strong>${c.nome}</strong></td><td style="text-align:center">${avalG[c.id]||"—"}</td><td style="text-align:center">${avalA[c.id]||"—"}</td><td style="text-align:center;font-weight:700;color:#0a1628">${getMediaOuConsenso(c.id)||"—"}</td><td>${fatosG[c.id]||"—"}</td><td>${fatosA[c.id]||"—"}</td></tr>`).join("")}
+    </table>
+    ${piores.length>0?`<h2>Plano de Desenvolvimento — 3 Prioridades</h2><p style="font-size:13px;color:#64748b">Competências com menor resultado — desenvolvimento prioritário</p>${piores.map((c:any,i:number)=>`
+    <div style="margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:10px;border-left:4px solid #84cc16">
+      <h3 style="margin:0 0 4px;color:#0a1628;font-size:16px">${i+1}. ${c.nome} — Nota: ${c.nota}</h3>
+      <p style="font-size:12px;color:#64748b;margin:0 0 12px">${c.desc}</p>
+      ${impacto[c.id]?`<p style="font-size:13px;margin:0 0 6px"><strong>Impacto atual:</strong> ${impacto[c.id]}</p>`:""}
+      ${expect[c.id]?`<p style="font-size:13px;margin:0 0 12px"><strong>Expectativa de resultado:</strong> ${expect[c.id]}</p>`:""}
+      <p style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px">5 Ações de Desenvolvimento</p>
+      ${c.acoes.map((a:string)=>`<p style="font-size:13px;margin:3px 0">• ${a}</p>`).join("")}
+      <p style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">2 Técnicas</p>
+      ${c.tecnicas.map((t:string)=>`<p style="font-size:13px;margin:3px 0">• ${t}</p>`).join("")}
+      <p style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">2 Leituras</p>
+      ${c.leituras.map((l:string)=>`<p style="font-size:13px;margin:3px 0">📖 ${l}</p>`).join("")}
+    </div>`).join("")}`:""}
+    <h2>Compromisso de Desenvolvimento</h2>
+    <p style="font-size:13px;color:#64748b;margin-bottom:40px">Ao assinar abaixo, as partes se comprometem com o processo de desenvolvimento descrito neste documento.</p>
+    <div class="ass">
+      <div class="ass-item"><div style="height:50px"></div><strong>${cicloAtual?.colaborador}</strong><br><span style="color:#64748b;font-size:12px">Colaborador(a)</span><br><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
+      <div class="ass-item"><div style="height:50px"></div><strong>${cicloAtual?.gestor}</strong><br><span style="color:#64748b;font-size:12px">Gestor(a)</span><br><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
+      <div class="ass-item"><div style="height:50px"></div><strong>${cicloAtual?.rh}</strong><br><span style="color:#64748b;font-size:12px">RH / Consultor(a)</span><br><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
+    </div>
+    <p style="font-size:11px;color:#94a3b8;text-align:center;margin-top:48px">Gerado por Avança Talentos · Sua ferramenta de avaliação e desenvolvimento de talentos</p>
+    <script>window.print();<\/script></body></html>`);
+    win!.document.close();
+  }
 
-  const Header = ({title,sub,back}:{title:string;sub:string;back:()=>void}) => (
-    <div style={{background:"#fff",borderBottom:"1px solid #f3f4f6",padding:"14px 20px",display:"flex",alignItems:"center",gap:12,position:"sticky",top:0,zIndex:10}}>
-      <button onClick={back} style={{background:"none",border:"none",cursor:"pointer",fontSize:22,color:"#6b7280",lineHeight:1}}>←</button>
-      <div style={{flex:1}}><p style={{fontWeight:700,fontSize:15,margin:0}}>{title}</p><p style={{fontSize:12,color:"#9ca3af",margin:0}}>{sub}</p></div>
+  // HEADER
+  const Header = ({title,sub,back}:{title:string;sub?:string;back?:()=>void}) => (
+    <div style={{background:NAVY,padding:"16px 24px",display:"flex",alignItems:"center",gap:12}}>
+      {back&&<button onClick={back} style={{background:"none",border:"none",color:"#90e0ef",cursor:"pointer",fontSize:22,lineHeight:1}}>←</button>}
+      <div style={{flex:1}}>
+        <p style={{color:LIME,fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase" as const,margin:0}}>Avança Talentos</p>
+        <p style={{color:WHITE,fontWeight:700,fontSize:16,margin:0}}>{title}</p>
+        {sub&&<p style={{color:"#90e0ef",fontSize:12,margin:"2px 0 0"}}>{sub}</p>}
+      </div>
+      {user&&<div style={{display:"flex",alignItems:"center",gap:10}}>
+        <Avatar name={user.fullName||"RH"} size={34}/>
+        <button onClick={()=>signOut()} style={{background:"rgba(255,255,255,.1)",border:"none",color:"#90e0ef",borderRadius:8,padding:"6px 12px",fontSize:12,cursor:"pointer"}}>Sair</button>
+      </div>}
     </div>
   );
 
-  if (screen==="dashboard") return (
-    <div style={{minHeight:"100vh",background:"#f9fafb",fontFamily:"system-ui,sans-serif"}}>
+  // DASHBOARD
+  if(screen==="dash") return (
+    <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
       {toast&&<Toast {...toast}/>}
-      <div style={{background:"linear-gradient(135deg,#7C3AED,#4F46E5)",padding:"20px 20px 48px"}}>
-        <div style={{maxWidth:680,margin:"0 auto",display:"flex",alignItems:"center",gap:12}}>
-          <Avatar name={user?.fullName||"G"} size={42} color="#fff"/>
-          <div style={{flex:1}}><p style={{color:"#c4b5fd",fontSize:12,margin:0}}>Bem-vindo,</p><p style={{color:"#fff",fontWeight:700,fontSize:17,margin:0}}>{user?.fullName}</p></div>
-          <button onClick={()=>signOut()} style={{background:"#ffffff22",border:"none",color:"#c4b5fd",borderRadius:10,padding:"6px 14px",fontSize:12,cursor:"pointer"}}>Sair</button>
+      <Header title={`Bem-vindo, ${user?.fullName?.split(" ")[0]||"RH"}`}/>
+      <div style={{maxWidth:800,margin:"0 auto",padding:"32px 24px"}}>
+        <div style={{background:NAVY,borderRadius:16,padding:28,marginBottom:24,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <h2 style={{color:WHITE,fontSize:22,fontWeight:800,margin:"0 0 6px"}}>Avança <span style={{color:LIME}}>Talentos</span></h2>
+            <p style={{color:"#90e0ef",fontSize:14,margin:0}}>Sua ferramenta de avaliação e desenvolvimento de talentos</p>
+          </div>
+          <Btn onClick={()=>{setForm({colaborador:"",gestor:"",rh:"",cargo:"",area:""});setCompsSel([]);setScreen("criar");}}>+ Novo ciclo</Btn>
         </div>
-      </div>
-      <div style={{maxWidth:680,margin:"-24px auto 0",padding:"0 16px 40px"}}>
-        <button onClick={startNew} style={{width:"100%",background:"#7C3AED",color:"#fff",border:"none",borderRadius:14,padding:15,fontSize:15,fontWeight:700,cursor:"pointer",marginBottom:20,boxShadow:"0 4px 14px #7C3AED44"}}>+ Novo PDI</button>
-        {loading?(<div style={{textAlign:"center",padding:48}}><Spinner/><p style={{color:"#9ca3af",fontSize:14,marginTop:12}}>Carregando do Notion…</p></div>)
-        :pdis.length===0?(<div style={{textAlign:"center",padding:"48px 20px",color:"#9ca3af"}}><div style={{fontSize:44,marginBottom:12}}>📝</div><p style={{fontSize:15}}>Nenhum PDI criado ainda.</p></div>)
-        :pdis.map((pdi:any)=>{
-          const avgA=pdi.comps?.reduce((a:number,c:any)=>a+c.nivelAntes,0)/(pdi.comps?.length||1);
-          const cd=pdi.comps?.filter((c:any)=>c.nivelDepois!==null)||[];
-          const avgD=cd.length>0?cd.reduce((a:number,c:any)=>a+c.nivelDepois,0)/cd.length:null;
-          const fc=FACTOR_OF[pdi.comps?.[0]?.id];
-          return(
-            <div key={pdi.pageId} style={{background:"#fff",borderRadius:16,padding:16,marginBottom:12,border:"1px solid #f3f4f6",boxShadow:"0 1px 4px rgba(0,0,0,.05)"}}>
-              <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12}}>
-                <Avatar name={pdi.nome} size={44} color={fc?.color||"#7C3AED"}/>
-                <div style={{flex:1,minWidth:0}}><p style={{fontWeight:700,fontSize:15,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{pdi.nome}</p><p style={{fontSize:12,color:"#6b7280",margin:"2px 0 0"}}>{pdi.cargo}{pdi.area&&` · ${pdi.area}`}</p></div>
-                <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:pdi.status==="Concluído"?"#d1fae5":"#ede9fe",color:pdi.status==="Concluído"?"#065f46":"#5b21b6",fontWeight:600,whiteSpace:"nowrap"}}>{pdi.status||"Em andamento"}</span>
+        {loading?(<div style={{textAlign:"center",padding:48}}><Spinner/><p style={{color:GRAY,marginTop:12}}>Carregando ciclos...</p></div>)
+        :ciclos.length===0?(<div style={{textAlign:"center",padding:48,color:GRAY}}><p style={{fontSize:15}}>Nenhum ciclo criado ainda.</p><p style={{fontSize:13}}>Clique em "+ Novo ciclo" para começar.</p></div>)
+        :ciclos.map((c:any)=>(
+          <div key={c.pageId} onClick={()=>{setCicloAtual(c);setScreen("ciclo");}} style={{background:WHITE,borderRadius:14,padding:18,marginBottom:12,border:`1px solid ${GRAY_B}`,cursor:"pointer"}}>
+            <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:10}}>
+              <Avatar name={c.colaborador} size={42}/>
+              <div style={{flex:1}}>
+                <p style={{fontWeight:700,fontSize:15,margin:0,color:NAVY}}>{c.colaborador}</p>
+                <p style={{fontSize:12,color:GRAY,margin:"2px 0 0"}}>{c.cargo}{c.area&&` · ${c.area}`} · Gestor: {c.gestor}</p>
               </div>
-              {pdi.comps&&<div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>{pdi.comps.map((c:any)=>{const f=FACTOR_OF[c.id];return<span key={c.id} style={{fontSize:11,background:f?.light||"#f3f4f6",color:f?.text||"#374151",padding:"3px 8px",borderRadius:99,fontWeight:500}}>{c.name}</span>;})}</div>}
-              <div style={{display:"flex",gap:8}}>
-                <button onClick={()=>{setViewPdi(pdi);setScreen("view");}} style={{flex:1,background:"#f3f4f6",color:"#374151",border:"none",borderRadius:10,padding:"9px",fontSize:13,fontWeight:600,cursor:"pointer"}}>Ver PDI</button>
-                <button onClick={()=>copyLink(pdi)} style={{flex:1,background:"#ede9fe",color:"#5b21b6",border:"none",borderRadius:10,padding:"9px",fontSize:13,fontWeight:600,cursor:"pointer"}}>🔗 Copiar link</button>
-              </div>
+              <span style={{fontSize:11,padding:"3px 10px",borderRadius:99,background:c.temConsenso?"#d1fae5":c.temGestor&&c.temAuto?"#fef9c3":"#f1f5f9",color:c.temConsenso?"#065f46":c.temGestor&&c.temAuto?"#713f12":GRAY,fontWeight:600}}>{c.temConsenso?"Concluído":c.temGestor&&c.temAuto?"Aguardando feedback":c.temGestor||c.temAuto?"Em andamento":"Aguardando"}</span>
             </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  if (screen==="new1") return (
-    <div style={{minHeight:"100vh",background:"#f9fafb",fontFamily:"system-ui,sans-serif"}}>
-      {toast&&<Toast {...toast}/>}
-      <Header title="Novo PDI" sub="Etapa 1 de 3 — Dados do colaborador" back={()=>setScreen("dashboard")}/>
-      <div style={{padding:20,maxWidth:540,margin:"0 auto"}}>
-        {[["nome","Nome completo","Ex: Ana Paula Ferreira"],["cargo","Cargo","Ex: Analista de RH Sênior"],["area","Área","Ex: Recursos Humanos"]].map(([k,l,ph])=>(
-          <div key={k} style={{marginBottom:14}}>
-            <label style={{fontSize:13,fontWeight:500,color:"#374151",display:"block",marginBottom:5}}>{l}</label>
-            <input value={(form as any)[k]} onChange={e=>setForm(p=>({...p,[k]:e.target.value}))} placeholder={ph} style={{width:"100%",padding:"11px 14px",borderRadius:12,border:"1.5px solid #e5e7eb",fontSize:14,boxSizing:"border-box" as const}}/>
+            <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
+              {(c.comps||[]).slice(0,5).map((id:number)=>{const comp=COMPETENCIAS.find(x=>x.id===id);return comp?<span key={id} style={{fontSize:11,background:NAVY+"11",color:NAVY,padding:"3px 8px",borderRadius:99,fontWeight:500}}>{comp.nome}</span>:null;})}
+              {(c.comps||[]).length>5&&<span style={{fontSize:11,color:GRAY}}>+{c.comps.length-5} mais</span>}
+            </div>
           </div>
         ))}
-        <div style={{marginBottom:24}}>
-          <label style={{fontSize:13,fontWeight:500,color:"#374151",display:"block",marginBottom:5}}>Prazo do PDI</label>
-          <input type="date" value={form.prazo} onChange={e=>setForm(p=>({...p,prazo:e.target.value}))} style={{width:"100%",padding:"11px 14px",borderRadius:12,border:"1.5px solid #e5e7eb",fontSize:14,boxSizing:"border-box" as const}}/>
-        </div>
-        <button onClick={()=>setScreen("new2")} disabled={!form.nome} style={{width:"100%",background:form.nome?"#7C3AED":"#e5e7eb",color:form.nome?"#fff":"#9ca3af",border:"none",borderRadius:14,padding:15,fontSize:15,fontWeight:700,cursor:form.nome?"pointer":"default"}}>Próximo →</button>
       </div>
     </div>
   );
 
-  if (screen==="new2") return (
-    <div style={{minHeight:"100vh",background:"#f9fafb",fontFamily:"system-ui,sans-serif"}}>
+  // CRIAR CICLO
+  if(screen==="criar") return (
+    <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
       {toast&&<Toast {...toast}/>}
-      <Header title="Competências" sub={`Etapa 2 de 3 · ${selCount()}/5 selecionadas`} back={()=>setScreen("new1")}/>
-      <div style={{padding:"16px 20px",maxWidth:680,margin:"0 auto"}}>
-        <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar competência..." style={{width:"100%",padding:"10px 14px",borderRadius:12,border:"1.5px solid #e5e7eb",fontSize:14,marginBottom:12,boxSizing:"border-box" as const}}/>
-        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:8,marginBottom:16}}>
-          {[{key:"all",name:"Todas",color:"#6b7280"},...FACTORS.map(f=>({key:f.key,name:f.name,color:f.color}))].map(f=>(
-            <button key={f.key} onClick={()=>setFilterFactor(f.key)} style={{flexShrink:0,padding:"6px 14px",borderRadius:99,border:"none",cursor:"pointer",fontSize:12,fontWeight:500,background:filterFactor===f.key?f.color:"#f3f4f6",color:filterFactor===f.key?"#fff":"#6b7280"}}>{f.name}</button>
+      <Header title="Novo ciclo de avaliação" back={()=>setScreen("dash")}/>
+      <div style={{maxWidth:720,margin:"0 auto",padding:"32px 24px"}}>
+        <div style={{background:WHITE,borderRadius:16,padding:24,marginBottom:20,border:`1px solid ${GRAY_B}`}}>
+          <h3 style={{color:NAVY,fontSize:15,fontWeight:700,paddingLeft:12,borderLeft:`3px solid ${LIME}`,margin:"0 0 20px"}}>Dados do ciclo</h3>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+            {([["colaborador","Nome do colaborador *","Ex: Ana Paula Ferreira"],["gestor","Nome do gestor *","Ex: Carlos Mendes"],["cargo","Cargo","Ex: Analista de RH Sênior"],["area","Área","Ex: Recursos Humanos"]] as [string,string,string][]).map(([k,l,ph])=>(
+              <div key={k}>
+                <label style={{fontSize:12,fontWeight:600,color:GRAY,display:"block",marginBottom:5}}>{l}</label>
+                <input value={(form as any)[k]} onChange={e=>setForm(p=>({...p,[k]:e.target.value}))} placeholder={ph} style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1.5px solid ${GRAY_B}`,fontSize:14,boxSizing:"border-box" as const}}/>
+              </div>
+            ))}
+            <div style={{gridColumn:"1/-1"}}>
+              <label style={{fontSize:12,fontWeight:600,color:GRAY,display:"block",marginBottom:5}}>Nome do RH / Consultor *</label>
+              <input value={form.rh} onChange={e=>setForm(p=>({...p,rh:e.target.value}))} placeholder="Ex: Maria Silva" style={{width:"100%",padding:"10px 14px",borderRadius:10,border:`1.5px solid ${GRAY_B}`,fontSize:14,boxSizing:"border-box" as const}}/>
+            </div>
+          </div>
+        </div>
+        <div style={{background:WHITE,borderRadius:16,padding:24,marginBottom:20,border:`1px solid ${GRAY_B}`}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+            <h3 style={{color:NAVY,fontSize:15,fontWeight:700,paddingLeft:12,borderLeft:`3px solid ${LIME}`,margin:0}}>Competências</h3>
+            <span style={{fontSize:12,fontWeight:700,color:compsSel.length>=6?LIME:GRAY}}>{compsSel.length}/15 {compsSel.length<6?"(mín. 6)":"✓"}</span>
+          </div>
+          {["Pensamento","Resultados","Pessoas","Eu"].map(fator=>(
+            <div key={fator} style={{marginBottom:18}}>
+              <p style={{fontSize:10,fontWeight:700,color:TEAL,textTransform:"uppercase" as const,letterSpacing:"0.12em",margin:"0 0 10px",display:"flex",alignItems:"center",gap:6}}><span style={{width:16,height:2,background:TEAL,display:"inline-block"}}></span>{fator}</p>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+                {COMPETENCIAS.filter(c=>c.fator===fator).map(c=>{
+                  const sel=compsSel.includes(c.id);
+                  return <div key={c.id} onClick={()=>{if(sel){setCompsSel(p=>p.filter(x=>x!==c.id));}else if(compsSel.length<15){setCompsSel(p=>[...p,c.id]);}else{showToast("Máximo 15 competências","err");}}} style={{padding:"10px 14px",borderRadius:10,border:`2px solid ${sel?LIME:GRAY_B}`,background:sel?LIME+"11":WHITE,cursor:"pointer",display:"flex",gap:10,alignItems:"flex-start"}}>
+                    <div style={{width:18,height:18,borderRadius:4,border:`2px solid ${sel?LIME:GRAY_B}`,background:sel?LIME:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{sel&&<span style={{color:NAVY,fontSize:11,fontWeight:800}}>✓</span>}</div>
+                    <div><p style={{fontSize:13,fontWeight:600,color:NAVY,margin:0}}>{c.nome}</p><p style={{fontSize:11,color:GRAY,margin:"2px 0 0",lineHeight:1.4}}>{c.desc}</p></div>
+                  </div>;
+                })}
+              </div>
+            </div>
           ))}
         </div>
-        {FACTORS.map(factor=>{
-          const cifs=factor.clusters.flatMap(cl=>cl.comps).filter(c=>filteredComps.some(fc=>fc.id===c.id));
-          if(!cifs.length) return null;
-          return(
-            <div key={factor.key} style={{marginBottom:20}}>
-              <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}><div style={{width:10,height:10,borderRadius:"50%",background:factor.color}}/><span style={{fontSize:13,fontWeight:700,color:"#374151"}}>{factor.name}</span></div>
-              {cifs.map(comp=>(
-                <div key={comp.id}>
-                  <div onClick={()=>toggleComp(comp.id)} style={{background:"#fff",borderRadius:12,padding:"12px 14px",marginBottom:6,border:selected[comp.id]?`2px solid ${factor.color}`:"1.5px solid #f3f4f6",cursor:"pointer",display:"flex",gap:12,alignItems:"flex-start"}}>
-                    <div style={{width:22,height:22,borderRadius:6,border:selected[comp.id]?"none":"1.5px solid #d1d5db",background:selected[comp.id]?factor.color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginTop:1}}>{selected[comp.id]&&<span style={{color:"#fff",fontSize:13,fontWeight:700}}>✓</span>}</div>
-                    <div style={{flex:1}}><p style={{fontWeight:600,fontSize:14,margin:"0 0 2px",color:"#111827"}}>{comp.name}</p><p style={{fontSize:12,color:"#6b7280",margin:0,lineHeight:1.5}}>{comp.desc}</p></div>
-                  </div>
-                  {selected[comp.id]&&(
-                    <div style={{background:factor.light,borderRadius:10,padding:"12px 14px",marginBottom:8,marginTop:-4}}>
-                      <p style={{fontSize:12,fontWeight:600,color:factor.text,margin:"0 0 8px"}}>Nível atual:</p>
-                      <div style={{display:"flex",gap:5,marginBottom:8}}>{NIVEL_OPTS.map(n=><button key={n.key} onClick={()=>setNivelAntes(p=>({...p,[comp.id]:n.key}))} style={{flex:1,padding:"7px 2px",borderRadius:8,border:"none",cursor:"pointer",fontSize:11,fontWeight:700,background:nivelAntes[comp.id]===n.key?n.color:"#fff",color:nivelAntes[comp.id]===n.key?"#fff":"#6b7280"}}>{n.key}</button>)}</div>
-                      {nivelAntes[comp.id]&&<p style={{fontSize:11,color:factor.text,margin:"0 0 10px",textAlign:"center" as const,fontWeight:500}}>{NIVEL_OPTS.find(n=>n.key===nivelAntes[comp.id])?.label}</p>}
-                      <textarea value={obsAntes[comp.id]||""} onChange={e=>setObsAntes(p=>({...p,[comp.id]:e.target.value}))} placeholder="Observações iniciais..." rows={2} style={{width:"100%",borderRadius:8,border:"1px solid #e5e7eb",fontSize:12,padding:"8px",boxSizing:"border-box" as const,resize:"vertical" as const,fontFamily:"inherit"}}/>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          );
-        })}
-        {selCount()>0&&<button onClick={()=>setScreen("new3")} style={{position:"sticky",bottom:16,width:"100%",background:"#7C3AED",color:"#fff",border:"none",borderRadius:14,padding:15,fontSize:15,fontWeight:700,cursor:"pointer",boxShadow:"0 4px 14px #7C3AED55"}}>Revisar PDI ({selCount()}) →</button>}
+        <Btn onClick={criarCiclo} disabled={saving}>{saving?<Spinner/>:"Criar ciclo e gerar links"}</Btn>
       </div>
     </div>
   );
 
-  if (screen==="new3") {
-    const selComps=ALL_COMPS.filter(c=>selected[c.id]);
-    return(
-      <div style={{minHeight:"100vh",background:"#f9fafb",fontFamily:"system-ui,sans-serif"}}>
-        {toast&&<Toast {...toast}/>}
-        <Header title="Revisar PDI" sub="Etapa 3 de 3" back={()=>setScreen("new2")}/>
-        <div style={{padding:20,maxWidth:640,margin:"0 auto"}}>
-          <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:16,border:"1px solid #f3f4f6"}}>
-            <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:16,paddingBottom:16,borderBottom:"1px solid #f9fafb"}}>
-              <Avatar name={form.nome} size={50}/><div><p style={{fontWeight:700,fontSize:16,margin:0}}>{form.nome}</p><p style={{fontSize:13,color:"#6b7280",margin:"2px 0 0"}}>{form.cargo}{form.area&&` · ${form.area}`}</p></div>
+  // CICLO
+  if(screen==="ciclo"&&cicloAtual) return (
+    <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
+      {toast&&<Toast {...toast}/>}
+      <Header title={cicloAtual.colaborador} sub={`Ciclo de avaliação · ${cicloAtual.criadoEm}`} back={()=>setScreen("dash")}/>
+      <div style={{maxWidth:720,margin:"0 auto",padding:"32px 24px"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14,marginBottom:20}}>
+          <div style={{background:WHITE,borderRadius:14,padding:20,border:`1px solid ${GRAY_B}`}}>
+            <div style={{width:3,height:20,background:NAVY,borderRadius:2,marginBottom:10}}></div>
+            <h4 style={{fontSize:14,fontWeight:700,color:NAVY,marginBottom:4}}>Link do Gestor</h4>
+            <p style={{fontSize:12,color:GRAY,marginBottom:14}}>Avaliação confidencial do colaborador</p>
+            <Btn size="sm" onClick={()=>{setAvalG({});setFatosG({});setScreen("gestor");}}>Abrir avaliação do gestor</Btn>
+          </div>
+          <div style={{background:WHITE,borderRadius:14,padding:20,border:`1px solid ${GRAY_B}`}}>
+            <div style={{width:3,height:20,background:TEAL,borderRadius:2,marginBottom:10}}></div>
+            <h4 style={{fontSize:14,fontWeight:700,color:NAVY,marginBottom:4}}>Link do Colaborador</h4>
+            <p style={{fontSize:12,color:GRAY,marginBottom:14}}>Autoavaliação confidencial</p>
+            <Btn size="sm" color={TEAL} onClick={()=>{setAvalA({});setFatosA({});setScreen("auto");}}>Abrir autoavaliação</Btn>
+          </div>
+        </div>
+        <div style={{background:WHITE,borderRadius:14,padding:20,border:`1px solid ${GRAY_B}`,marginBottom:14}}>
+          <h4 style={{fontSize:14,fontWeight:700,color:NAVY,marginBottom:4}}>Análise Cruzada</h4>
+          <p style={{fontSize:12,color:GRAY,marginBottom:14}}>Comparativo entre gestor e colaborador. Pode ser compartilhado antes do consenso.</p>
+          <Btn size="sm" color={LIME} onClick={()=>setScreen("analise")}>Ver análise cruzada</Btn>
+        </div>
+        <div style={{background:WHITE,borderRadius:14,padding:20,border:`1px solid ${GRAY_B}`}}>
+          <h4 style={{fontSize:14,fontWeight:700,color:NAVY,marginBottom:12}}>Competências do ciclo ({compsDociclo.length})</h4>
+          <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>{compsDociclo.map(c=><span key={c.id} style={{fontSize:11,background:GRAY_L,color:NAVY,padding:"4px 10px",borderRadius:99,fontWeight:500}}>{c.nome}</span>)}</div>
+        </div>
+      </div>
+    </div>
+  );
+
+  // AVALIAÇÃO GESTOR
+  if(screen==="gestor"&&cicloAtual) return (
+    <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
+      {toast&&<Toast {...toast}/>}
+      <Header title="Avaliação do Colaborador" sub={`${cicloAtual.colaborador} · Confidencial até o feedback`} back={()=>setScreen("ciclo")}/>
+      <div style={{maxWidth:720,margin:"0 auto",padding:"32px 24px"}}>
+        <div style={{background:"#fef9c3",borderRadius:12,padding:"14px 18px",marginBottom:20,border:"1px solid #ca8a04"}}>
+          <p style={{fontSize:13,color:"#713f12",margin:0}}>Esta avaliação é <strong>sigilosa</strong>. O colaborador não terá acesso até o momento do feedback. Baseie-se em fatos e comportamentos observáveis.</p>
+        </div>
+        <div style={{background:WHITE,borderRadius:12,padding:"12px 16px",marginBottom:20,border:`1px solid ${GRAY_B}`}}>
+          <p style={{fontSize:11,fontWeight:600,color:GRAY,margin:0}}>Legenda: 1 = Muito abaixo do esperado · 2 = Abaixo · 3 = Dentro do esperado · 4 = Acima · 5 = Muito acima do esperado</p>
+        </div>
+        {compsDociclo.map((c,i)=>(
+          <div key={c.id} style={{background:WHITE,borderRadius:14,padding:20,marginBottom:14,border:`1px solid ${GRAY_B}`}}>
+            <div style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:14}}>
+              <div style={{width:28,height:28,borderRadius:8,background:NAVY,color:LIME,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+              <div><p style={{fontWeight:700,fontSize:14,color:NAVY,margin:0}}>{c.nome}</p><p style={{fontSize:12,color:GRAY,margin:"2px 0 0"}}>{c.desc}</p></div>
             </div>
-            {selComps.map((comp,idx)=>{
-              const f=FACTOR_OF[comp.id];const nivel=NIVEL_OPTS.find(n=>n.key===nivelAntes[comp.id]);
-              return(
-                <div key={comp.id} style={{marginBottom:16,paddingBottom:idx<selComps.length-1?16:0,borderBottom:idx<selComps.length-1?"1px solid #f9fafb":"none"}}>
-                  <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-                    <div style={{width:26,height:26,borderRadius:"50%",background:f?.color,color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{idx+1}</div>
-                    <span style={{fontWeight:700,fontSize:14}}>{comp.name}</span>
-                    {nivel&&<span style={{marginLeft:"auto",fontSize:11,padding:"2px 8px",borderRadius:99,background:nivel.color+"22",color:nivel.color,fontWeight:600}}>Nível {nivel.key}</span>}
+            <ScaleBtn value={avalG[c.id]||null} onChange={v=>setAvalG(p=>({...p,[c.id]:v}))}/>
+            <div style={{marginTop:14}}>
+              <label style={{fontSize:12,fontWeight:600,color:GRAY,display:"block",marginBottom:6}}>Fatos e dados que embasam esta avaliação:</label>
+              <textarea value={fatosG[c.id]||""} onChange={e=>setFatosG(p=>({...p,[c.id]:e.target.value}))} placeholder="Descreva situações, comportamentos observados ou resultados concretos que justificam a nota..." rows={3} style={{width:"100%",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:13,padding:"10px",boxSizing:"border-box" as const,resize:"vertical" as const,fontFamily:"inherit"}}/>
+            </div>
+          </div>
+        ))}
+        <Btn onClick={salvarGestor} disabled={saving}>{saving?<><Spinner/> Salvando...</>:"Salvar avaliação"}</Btn>
+      </div>
+    </div>
+  );
+
+  // AUTOAVALIAÇÃO
+  if(screen==="auto"&&cicloAtual) return (
+    <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
+      {toast&&<Toast {...toast}/>}
+      <Header title="Autoavaliação" sub={`${cicloAtual.colaborador} · Confidencial até o feedback`} back={()=>setScreen("ciclo")}/>
+      <div style={{maxWidth:720,margin:"0 auto",padding:"32px 24px"}}>
+        <div style={{background:"#dbeafe",borderRadius:12,padding:"14px 18px",marginBottom:20,border:"1px solid #3b82f6"}}>
+          <p style={{fontSize:13,color:"#1e40af",margin:0}}>Avalie cada competência com base no seu desempenho <strong>real e observável</strong>. Seja honesto — sua avaliação é sigilosa até o feedback.</p>
+        </div>
+        <div style={{background:WHITE,borderRadius:12,padding:"12px 16px",marginBottom:20,border:`1px solid ${GRAY_B}`}}>
+          <p style={{fontSize:11,fontWeight:600,color:GRAY,margin:0}}>Legenda: 1 = Muito abaixo do esperado · 2 = Abaixo · 3 = Dentro do esperado · 4 = Acima · 5 = Muito acima do esperado</p>
+        </div>
+        {compsDociclo.map((c,i)=>(
+          <div key={c.id} style={{background:WHITE,borderRadius:14,padding:20,marginBottom:14,border:`1px solid ${GRAY_B}`}}>
+            <div style={{display:"flex",gap:10,alignItems:"flex-start",marginBottom:14}}>
+              <div style={{width:28,height:28,borderRadius:8,background:TEAL+"33",color:TEAL,fontSize:12,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+              <div><p style={{fontWeight:700,fontSize:14,color:NAVY,margin:0}}>{c.nome}</p><p style={{fontSize:12,color:GRAY,margin:"2px 0 0"}}>{c.desc}</p></div>
+            </div>
+            <ScaleBtn value={avalA[c.id]||null} onChange={v=>setAvalA(p=>({...p,[c.id]:v}))}/>
+            <div style={{marginTop:14}}>
+              <label style={{fontSize:12,fontWeight:600,color:GRAY,display:"block",marginBottom:6}}>Fatos e dados que embasam sua avaliação:</label>
+              <textarea value={fatosA[c.id]||""} onChange={e=>setFatosA(p=>({...p,[c.id]:e.target.value}))} placeholder="Descreva situações, exemplos concretos ou resultados que justificam sua nota..." rows={3} style={{width:"100%",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:13,padding:"10px",boxSizing:"border-box" as const,resize:"vertical" as const,fontFamily:"inherit"}}/>
+            </div>
+          </div>
+        ))}
+        <Btn color={TEAL} onClick={salvarAuto} disabled={saving}>{saving?<><Spinner color={TEAL}/> Salvando...</>:"Salvar autoavaliação"}</Btn>
+      </div>
+    </div>
+  );
+
+  // ANÁLISE CRUZADA
+  if(screen==="analise"&&cicloAtual) {
+    const piores=get3Piores();
+    return (
+      <div style={{minHeight:"100vh",background:GRAY_L,fontFamily:"system-ui,sans-serif"}}>
+        {toast&&<Toast {...toast}/>}
+        <Header title="Análise Cruzada" sub={cicloAtual.colaborador} back={()=>setScreen("ciclo")}/>
+        <div style={{maxWidth:800,margin:"0 auto",padding:"32px 24px"}}>
+          <div style={{display:"flex",gap:8,marginBottom:20}}>
+            <Btn size="sm" color={metodo==="media"?LIME:GRAY_L} onClick={()=>setMetodo("media")}>Média automática</Btn>
+            <Btn size="sm" color={metodo==="consenso"?LIME:GRAY_L} onClick={()=>setMetodo("consenso")}>Consenso manual</Btn>
+          </div>
+
+          {/* Radar */}
+          <div style={{background:WHITE,borderRadius:16,padding:24,marginBottom:20,border:`1px solid ${GRAY_B}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+              <h3 style={{color:NAVY,fontSize:15,fontWeight:700,margin:0}}>Gráfico comparativo</h3>
+              <div style={{display:"flex",gap:16,fontSize:11,color:GRAY}}>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:16,height:2,background:NAVY,display:"inline-block"}}></span>Gestor</span>
+                <span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:16,height:2,background:TEAL,display:"inline-block"}}></span>Colaborador</span>
+                {metodo==="consenso"&&<span style={{display:"flex",alignItems:"center",gap:5}}><span style={{width:16,height:2,background:LIME,display:"inline-block"}}></span>Consenso</span>}
+              </div>
+            </div>
+            <RadarChart
+              names={compsDociclo.map(c=>c.nome)}
+              gestor={compsDociclo.map(c=>avalG[c.id]||0)}
+              auto={compsDociclo.map(c=>avalA[c.id]||0)}
+              consenso={metodo==="consenso"?compsDociclo.map(c=>consenso[c.id]||0):null}
+            />
+          </div>
+
+          {/* Tabela */}
+          <div style={{background:WHITE,borderRadius:16,padding:24,marginBottom:20,border:`1px solid ${GRAY_B}`}}>
+            <h3 style={{color:NAVY,fontSize:15,fontWeight:700,marginBottom:16}}>Comparativo por competência</h3>
+            {compsDociclo.map((c,i)=>{
+              const g=avalG[c.id],a=avalA[c.id],media=g&&a?Math.round(((g+a)/2)*10)/10:null,diff=g&&a?g-a:null;
+              return (
+                <div key={c.id} style={{marginBottom:16,paddingBottom:16,borderBottom:i<compsDociclo.length-1?`1px solid ${GRAY_B}`:"none"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8,flexWrap:"wrap" as const}}>
+                    <div style={{width:24,height:24,borderRadius:6,background:NAVY,color:LIME,fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+                    <span style={{fontWeight:700,fontSize:14,color:NAVY,flex:1}}>{c.nome}</span>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap" as const}}>
+                      {g&&<span style={{fontSize:11,padding:"3px 8px",borderRadius:99,background:NAVY+"11",color:NAVY,fontWeight:700}}>G: {g}</span>}
+                      {a&&<span style={{fontSize:11,padding:"3px 8px",borderRadius:99,background:TEAL+"22",color:"#0077b6",fontWeight:700}}>C: {a}</span>}
+                      {media&&<span style={{fontSize:11,padding:"3px 8px",borderRadius:99,background:LIME+"33",color:LIME_D,fontWeight:700}}>Média: {media}</span>}
+                      {diff!==null&&Math.abs(diff)>=2&&<span style={{fontSize:11,padding:"3px 8px",borderRadius:99,background:"#fee2e2",color:"#991b1b",fontWeight:700}}>Divergência</span>}
+                    </div>
                   </div>
-                  <div style={{paddingLeft:34}}>{comp.remedies.slice(0,2).map((r,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:4}}><div style={{width:5,height:5,borderRadius:"50%",background:f?.color,flexShrink:0,marginTop:6}}/><p style={{fontSize:12,color:"#374151",margin:0,lineHeight:1.5}}>{r}</p></div>)}</div>
+                  {fatosG[c.id]&&<div style={{background:NAVY+"08",borderRadius:8,padding:"8px 12px",marginBottom:6,fontSize:12,color:NAVY}}><strong>Gestor:</strong> {fatosG[c.id]}</div>}
+                  {fatosA[c.id]&&<div style={{background:TEAL+"11",borderRadius:8,padding:"8px 12px",marginBottom:6,fontSize:12,color:NAVY}}><strong>Colaborador:</strong> {fatosA[c.id]}</div>}
+                  {metodo==="consenso"&&(
+                    <div style={{marginTop:10,background:GRAY_L,borderRadius:10,padding:14}}>
+                      <ScaleBtn value={consenso[c.id]||null} onChange={v=>setConsenso(p=>({...p,[c.id]:v}))}/>
+                      <input value={impacto[c.id]||""} onChange={e=>setImpacto(p=>({...p,[c.id]:e.target.value}))} placeholder="Impacto atual: como esta competência está afetando resultados hoje?" style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:12,marginTop:10,marginBottom:8,boxSizing:"border-box" as const,background:WHITE}}/>
+                      <input value={expect[c.id]||""} onChange={e=>setExpect(p=>({...p,[c.id]:e.target.value}))} placeholder="Expectativa: qual o resultado esperado ao desenvolver esta competência?" style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:12,boxSizing:"border-box" as const,background:WHITE}}/>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
-          <button onClick={handleSavePdi} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":"#7C3AED",color:"#fff",border:"none",borderRadius:14,padding:15,fontSize:15,fontWeight:700,cursor:saving?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-            {saving?<><Spinner color="#fff"/> Salvando…</>:"✓ Salvar PDI"}
-          </button>
-        </div>
-      </div>
-    );
-  }
 
-  if (screen==="view"&&viewPdi) {
-    const hasD=viewPdi.comps?.some((c:any)=>c.nivelDepois!==null);
-    const rAntes=viewPdi.comps?.map((c:any)=>c.nivelAntes)||[];
-    const rDepois=hasD?viewPdi.comps?.map((c:any)=>c.nivelDepois??c.nivelAntes):null;
-    const avgA=rAntes.length?rAntes.reduce((a:number,b:number)=>a+b,0)/rAntes.length:0;
-    const avgD=rDepois?rDepois.reduce((a:number,b:number)=>a+b,0)/rDepois.length:null;
-    return(
-      <div style={{minHeight:"100vh",background:"#f9fafb",fontFamily:"system-ui,sans-serif"}}>
-        {toast&&<Toast {...toast}/>}
-        <div style={{background:"linear-gradient(135deg,#7C3AED,#4F46E5)",padding:"20px 20px 52px"}}>
-          <button onClick={()=>setScreen("dashboard")} style={{background:"#ffffff22",border:"none",color:"#fff",borderRadius:10,padding:"8px 14px",cursor:"pointer",fontSize:14,marginBottom:16}}>← Dashboard</button>
-          <div style={{display:"flex",gap:14,alignItems:"center"}}>
-            <Avatar name={viewPdi.nome} size={54} color="#fff"/>
-            <div><h2 style={{color:"#fff",fontWeight:700,fontSize:20,margin:0}}>{viewPdi.nome}</h2><p style={{color:"#c4b5fd",fontSize:13,margin:"4px 0 0"}}>{viewPdi.cargo}{viewPdi.area&&` · ${viewPdi.area}`}</p></div>
-          </div>
-        </div>
-        <div style={{padding:"0 16px 32px",maxWidth:640,margin:"-30px auto 0"}}>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14}}>
-            {[["Nível inicial",avgA.toFixed(1)+"/5","#7C3AED"],[avgD?"Nível atual":"Competências",avgD?avgD.toFixed(1)+"/5":viewPdi.comps?.length,"#059669"],["Status",viewPdi.status||"Em andamento","#D97706"]].map(([l,v,c])=>(
-              <div key={l as string} style={{background:"#fff",borderRadius:14,padding:"12px 14px",border:"1px solid #f3f4f6"}}>
-                <p style={{fontSize:10,color:"#9ca3af",margin:"0 0 3px",textTransform:"uppercase" as const,letterSpacing:".05em"}}>{l}</p>
-                <p style={{fontSize:16,fontWeight:700,color:c as string,margin:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" as const}}>{v as string}</p>
-              </div>
-            ))}
-          </div>
-          {viewPdi.comps?.length>=3&&(
-            <div style={{background:"#fff",borderRadius:16,padding:20,marginBottom:14,border:"1px solid #f3f4f6"}}>
-              <p style={{fontWeight:700,fontSize:14,margin:"0 0 8px"}}>Gráfico de evolução</p>
-              <RadarChart names={viewPdi.comps.map((c:any)=>c.name)} antes={rAntes} depois={rDepois}/>
-              {!hasD&&<p style={{fontSize:12,color:"#9ca3af",textAlign:"center" as const,margin:"8px 0 0"}}>Registre a avaliação final para ver a evolução</p>}
+          {/* PDI automático */}
+          {piores.length>0&&(
+            <div style={{background:WHITE,borderRadius:16,padding:24,marginBottom:20,border:`2px solid ${LIME}`}}>
+              <h3 style={{color:NAVY,fontSize:15,fontWeight:700,marginBottom:4}}>Plano de Desenvolvimento — 3 Prioridades</h3>
+              <p style={{fontSize:13,color:GRAY,marginBottom:20}}>Competências com menor resultado — gerado automaticamente</p>
+              {piores.map((c:any,i:number)=>(
+                <div key={c.id} style={{marginBottom:i<2?24:0,paddingBottom:i<2?24:0,borderBottom:i<2?`1px solid ${GRAY_B}`:"none"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
+                    <div style={{width:32,height:32,borderRadius:8,background:LIME,color:NAVY,fontSize:13,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{i+1}</div>
+                    <div>
+                      <p style={{fontWeight:800,fontSize:15,color:NAVY,margin:0}}>{c.nome}</p>
+                      <p style={{fontSize:12,color:GRAY,margin:"2px 0 0"}}>Nota: {c.nota} — {ESCALA[(c.nota||1)-1]?.label}</p>
+                    </div>
+                  </div>
+                  {metodo==="consenso"&&(
+                    <div style={{background:GRAY_L,borderRadius:10,padding:14,marginBottom:14}}>
+                      <input value={impacto[c.id]||""} onChange={e=>setImpacto(p=>({...p,[c.id]:e.target.value}))} placeholder="Impacto atual desta competência nos resultados..." style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:12,marginBottom:8,boxSizing:"border-box" as const,background:WHITE}}/>
+                      <input value={expect[c.id]||""} onChange={e=>setExpect(p=>({...p,[c.id]:e.target.value}))} placeholder="Expectativa de resultado com o desenvolvimento..." style={{width:"100%",padding:"8px 12px",borderRadius:8,border:`1.5px solid ${GRAY_B}`,fontSize:12,boxSizing:"border-box" as const,background:WHITE}}/>
+                    </div>
+                  )}
+                  <p style={{fontSize:10,fontWeight:700,color:GRAY,textTransform:"uppercase" as const,letterSpacing:"0.1em",margin:"0 0 8px"}}>5 Ações de desenvolvimento</p>
+                  {c.acoes.map((a:string,j:number)=><div key={j} style={{display:"flex",gap:8,marginBottom:5}}><div style={{width:5,height:5,borderRadius:"50%",background:LIME,flexShrink:0,marginTop:6}}></div><p style={{fontSize:13,color:"#334155",margin:0,lineHeight:1.5}}>{a}</p></div>)}
+                  <p style={{fontSize:10,fontWeight:700,color:GRAY,textTransform:"uppercase" as const,letterSpacing:"0.1em",margin:"14px 0 8px"}}>2 Técnicas</p>
+                  {c.tecnicas.map((t:string,j:number)=><div key={j} style={{display:"flex",gap:8,marginBottom:5}}><div style={{width:5,height:5,borderRadius:"50%",background:TEAL,flexShrink:0,marginTop:6}}></div><p style={{fontSize:13,color:"#334155",margin:0}}>{t}</p></div>)}
+                  <p style={{fontSize:10,fontWeight:700,color:GRAY,textTransform:"uppercase" as const,letterSpacing:"0.1em",margin:"14px 0 8px"}}>2 Leituras</p>
+                  {c.leituras.map((l:string,j:number)=><p key={j} style={{fontSize:13,color:"#1d4ed8",margin:"0 0 4px"}}>📖 {l}</p>)}
+                </div>
+              ))}
             </div>
           )}
-          {hasD&&avgD&&<div style={{background:"#d1fae5",borderRadius:14,padding:"14px 18px",marginBottom:14}}><p style={{margin:0,fontWeight:700,color:"#065f46",fontSize:14}}>📈 Evolução média: +{(avgD-avgA).toFixed(1)} pontos · {((avgD-avgA)/avgA*100).toFixed(0)}% de crescimento</p></div>}
-          {viewPdi.comps?.map((comp:any,idx:number)=>{
-            const full=ALL_COMPS.find(c=>c.id===comp.id);const f=FACTOR_OF[comp.id];
-            return(
-              <div key={comp.id||idx} style={{background:"#fff",borderRadius:16,padding:18,marginBottom:12,border:"1px solid #f3f4f6"}}>
-                <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
-                  <div style={{width:26,height:26,borderRadius:"50%",background:f?.color||"#7C3AED",color:"#fff",fontSize:12,fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>{idx+1}</div>
-                  <span style={{fontWeight:700,fontSize:14,flex:1}}>{comp.name}</span>
-                  <span style={{fontSize:12,padding:"2px 8px",borderRadius:99,background:"#ede9fe",color:"#5b21b6",fontWeight:700}}>{comp.nivelAntes}/5</span>
-                  {comp.nivelDepois!==null&&<><span style={{color:"#9ca3af"}}>→</span><span style={{fontSize:12,padding:"2px 8px",borderRadius:99,background:"#d1fae5",color:"#065f46",fontWeight:700}}>{comp.nivelDepois}/5</span></>}
-                </div>
-                {full&&<div style={{paddingLeft:36}}>{full.remedies.slice(0,2).map((r,i)=><div key={i} style={{display:"flex",gap:8,marginBottom:4}}><div style={{width:5,height:5,borderRadius:"50%",background:f?.color||"#7C3AED",flexShrink:0,marginTop:6}}/><p style={{fontSize:12,color:"#374151",margin:0,lineHeight:1.5}}>{r}</p></div>)}</div>}
-              </div>
-            );
-          })}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
-            <button onClick={()=>copyLink(viewPdi)} style={{background:"#ede9fe",color:"#5b21b6",border:"none",borderRadius:14,padding:13,fontSize:13,fontWeight:600,cursor:"pointer"}}>🔗 Link do colaborador</button>
-            <button onClick={()=>{const nd:Record<number,string>={},od:Record<number,string>={};viewPdi.comps?.forEach((c:any)=>{nd[c.id]=String(c.nivelDepois||c.nivelAntes);od[c.id]=c.obsDepois||"";});setNivelDepois(nd);setObsDepois(od);setScreen("update");}} style={{background:"#059669",color:"#fff",border:"none",borderRadius:14,padding:13,fontSize:13,fontWeight:600,cursor:"pointer"}}>📊 Avaliação final</button>
+
+          <div style={{display:"flex",gap:12}}>
+            <Btn onClick={exportPDF}>Exportar PDF com assinaturas</Btn>
+            <Btn outline color={NAVY} onClick={()=>setScreen("ciclo")}>Voltar ao ciclo</Btn>
           </div>
         </div>
       </div>
     );
   }
-
-  if (screen==="update"&&viewPdi) return(
-    <div style={{minHeight:"100vh",background:"#f9fafb",fontFamily:"system-ui,sans-serif"}}>
-      {toast&&<Toast {...toast}/>}
-      <Header title="Avaliação final" sub={viewPdi.nome} back={()=>setScreen("view")}/>
-      <div style={{padding:20,maxWidth:540,margin:"0 auto"}}>
-        <div style={{background:"#f0fdf4",borderRadius:12,padding:"12px 16px",marginBottom:20}}><p style={{fontSize:13,color:"#065f46",margin:0}}>📊 Após salvar, o gráfico antes/depois será atualizado no Notion.</p></div>
-        {viewPdi.comps?.map((comp:any)=>{
-          const f=FACTOR_OF[comp.id];
-          return(
-            <div key={comp.id} style={{background:"#fff",borderRadius:14,padding:16,marginBottom:12,border:"1px solid #f3f4f6"}}>
-              <p style={{fontWeight:700,fontSize:14,margin:"0 0 2px"}}>{comp.name}</p>
-              <p style={{fontSize:12,color:"#9ca3af",margin:"0 0 10px"}}>Nível inicial: {comp.nivelAntes}/5 — {NIVEL_OPTS.find(n=>n.key===String(comp.nivelAntes))?.label}</p>
-              <div style={{display:"flex",gap:5,marginBottom:8}}>{NIVEL_OPTS.map(n=><button key={n.key} onClick={()=>setNivelDepois(p=>({...p,[comp.id]:n.key}))} style={{flex:1,padding:"8px 2px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:nivelDepois[comp.id]===n.key?n.color:"#f3f4f6",color:nivelDepois[comp.id]===n.key?"#fff":"#6b7280"}}>{n.key}</button>)}</div>
-              {nivelDepois[comp.id]&&<p style={{fontSize:11,color:f?.color,margin:"0 0 8px",textAlign:"center" as const,fontWeight:600}}>{NIVEL_OPTS.find(n=>n.key===nivelDepois[comp.id])?.label}{parseInt(nivelDepois[comp.id])>comp.nivelAntes?" ↑ Evoluiu!":parseInt(nivelDepois[comp.id])<comp.nivelAntes?" ↓":""}</p>}
-              <textarea value={obsDepois[comp.id]||""} onChange={e=>setObsDepois(p=>({...p,[comp.id]:e.target.value}))} placeholder="Observações sobre a evolução..." rows={2} style={{width:"100%",borderRadius:8,border:"1px solid #e5e7eb",fontSize:12,padding:"8px",boxSizing:"border-box" as const,resize:"vertical" as const,fontFamily:"inherit"}}/>
-            </div>
-          );
-        })}
-        <button onClick={handleSaveUpdate} disabled={saving} style={{width:"100%",background:saving?"#9ca3af":"#059669",color:"#fff",border:"none",borderRadius:14,padding:15,fontSize:15,fontWeight:700,cursor:saving?"default":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:10}}>
-          {saving?<><Spinner color="#fff"/> Salvando…</>:"✓ Salvar avaliação"}
-        </button>
-      </div>
-    </div>
-  );
 
   return null;
 }
