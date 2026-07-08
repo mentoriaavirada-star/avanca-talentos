@@ -88,8 +88,8 @@ function ScaleBtn({ value, onChange }: { value:number|null; onChange:(v:number)=
 }
 
 export default function Dashboard() {
-  const { user } = useUser();
-  const { signOut } = useClerk();
+  const user = { fullName: "Usuário Teste", primaryEmailAddress: { emailAddress: "teste@teste.com" } };
+  const signOut = () => {};
   const [screen, setScreen] = useState<"dash"|"criar"|"ciclo"|"gestor"|"auto"|"analise">("dash");
   const [ciclos, setCiclos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
