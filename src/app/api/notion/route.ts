@@ -16,23 +16,10 @@ function textContent(blocks: any[]): string {
   return blocks.map((b: any) => b.plain_text || "").join("");
 }
 
-let rootPageCache: string | null = null;
+const ROOT_PAGE_ID = "3976f51b106880638396f23f98ee1d31";
+
 async function getOrCreateRootPage(): Promise<string> {
-  if (rootPageCache) return rootPageCache;
-  const search = await notion.search({
-    query: "Avança Talentos",
-    filter: { property: "object", value: "page" }
-  });
-  if (search.results.length > 0) {
-    rootPageCache = search.results[0].id;
-    return rootPageCache;
-  }
-  const page = await notion.pages.create({
-    parent: { type: "workspace", workspace: true } as any,
-    properties: { title: { title: [{ text: { content: "Avança Talentos" } }] } }
-  });
-  rootPageCache = page.id;
-  return rootPageCache;
+  return ROOT_PAGE_ID;
 }
 
 async function createCiclo(body: any) {
