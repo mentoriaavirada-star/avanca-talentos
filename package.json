@@ -1,6 +1,6 @@
 {
-  "name": "pdi-app",
-  "version": "1.0.1",
+  "name": "avanca-talentos",
+  "version": "1.0.2",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -21,4 +21,3 @@
     "typescript": "^5"
   }
 }
- 
