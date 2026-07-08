@@ -33,7 +33,7 @@ const ESCALA = [
   { v:5, label:"Muito acima do esperado", cor:"#15803d" },
 ];
 
-const NAVY="#0a1628", NAVY2="#112240", TEAL="#00b4d8", LIME="#84cc16", LIME_D="#65a30d", WHITE="#ffffff", GRAY="#64748b", GRAY_L="#f1f5f9", GRAY_B="#e2e8f0";
+const NAVY="#0a1628", NAVY2="#112240", TEAL="#00b4d8", LIME="#84cc16", WHITE="#ffffff", GRAY="#64748b", GRAY_L="#f1f5f9", GRAY_B="#e2e8f0";
 
 async function apiCall(action: string, extra: object = {}) {
   const res = await fetch("/api/notion", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({action,...extra}) });
@@ -88,8 +88,8 @@ function ScaleBtn({ value, onChange }: { value:number|null; onChange:(v:number)=
 }
 
 export default function Dashboard() {
-  const user = { fullName: "Usuário Teste", primaryEmailAddress: { emailAddress: "teste@teste.com" } };
-  const signOut = () => {};
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const [screen, setScreen] = useState<"dash"|"criar"|"ciclo"|"gestor"|"auto"|"analise">("dash");
   const [ciclos, setCiclos] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -110,11 +110,9 @@ export default function Dashboard() {
   function showToast(msg:string, type="ok") { setToast({msg,type}); setTimeout(()=>setToast(null),3000); }
 
   useEffect(()=>{
-    if(user?.primaryEmailAddress?.emailAddress) {
-      setLoading(true);
-      apiCall("list",{rhEmail:user.primaryEmailAddress.emailAddress}).then(d=>setCiclos(d||[])).catch(()=>showToast("Erro ao carregar ciclos","err")).finally(()=>setLoading(false));
-    }
-  },[user]);
+    setCiclos([]);
+    setLoading(false);
+  },[]);
 
   const compsDociclo = COMPETENCIAS.filter(c=>cicloAtual?.comps?.includes(c.id));
 
