@@ -189,9 +189,9 @@ export default function Dashboard() {
     </div>`).join("")}`:""}
     <h2>Compromisso de Desenvolvimento</h2>
     <div class="ass">
-      <div class="ass-item"><div style="height:50px"></div><strong>${cicloAtual?.colaborador}</strong><br><span style="color:#64748b;font-size:12px">Colaborador(a)</span><br><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
-      <div class="ass-item"><div style="height:50px"></div><strong>${cicloAtual?.gestor}</strong><br><span style="color:#64748b;font-size:12px">Gestor(a)</span><br><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
-      <div class="ass-item"><div style="height:50px"></div><strong>${cicloAtual?.rh}</strong><br><span style="color:#64748b;font-size:12px">RH / Consultor(a)</span><br><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
+      <div class="ass-item"><strong>${cicloAtual?.colaborador}</strong><br><span style="color:#64748b;font-size:12px">Colaborador(a)</span><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
+      <div class="ass-item"><strong>${cicloAtual?.gestor}</strong><br><span style="color:#64748b;font-size:12px">Gestor(a)</span><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
+      <div class="ass-item"><strong>${cicloAtual?.rh}</strong><br><span style="color:#64748b;font-size:12px">RH / Consultor(a)</span><br><span style="color:#64748b;font-size:11px">Data: ___/___/______</span></div>
     </div>
     <script>window.print();<\/script></body></html>`);
     win!.document.close();
